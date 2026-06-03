@@ -1,26 +1,187 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #111111;
+  --border: #222222;
+  --primary: #f97316;
+  --primary-hover: #ea580c;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+}
+
+::selection {
+  background: rgb(249 115 22 / 0.35);
+  color: white;
+}
+
+/* Landing page animations */
+@keyframes landing-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landing-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes landing-float-slow {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(8px, -16px);
+  }
+}
+
+@keyframes landing-pulse-glow {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes landing-gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes landing-grid-drift {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(48px);
+  }
+}
+
+@keyframes landing-shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes landing-icon-bounce {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.12) rotate(3deg);
+  }
+}
+
+@keyframes landing-reveal-visible {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing-animate-fade-in-up {
+  animation: landing-fade-in-up 0.9s ease forwards;
+}
+
+.landing-animate-float {
+  animation: landing-float 6s ease-in-out infinite;
+}
+
+.landing-animate-float-slow {
+  animation: landing-float-slow 8s ease-in-out infinite;
+}
+
+.landing-animate-pulse-glow {
+  animation: landing-pulse-glow 5s ease-in-out infinite;
+}
+
+.landing-animate-gradient {
+  background-size: 200% 200%;
+  animation: landing-gradient-shift 8s ease infinite;
+}
+
+.landing-scroll-reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s ease;
+}
+
+.landing-scroll-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.landing-delay-100 {
+  animation-delay: 0.1s;
+}
+.landing-delay-200 {
+  animation-delay: 0.2s;
+}
+.landing-delay-300 {
+  animation-delay: 0.3s;
+}
+.landing-delay-400 {
+  animation-delay: 0.4s;
+}
+.landing-delay-500 {
+  animation-delay: 0.5s;
+}
+.landing-delay-600 {
+  animation-delay: 0.6s;
+}
+
+.landing-opacity-0 {
+  opacity: 0;
 }
