@@ -32,6 +32,7 @@ function patchLandingHtml(html: string): string {
     .replace(
       "</div>\n</nav>",
       `  <div style="display:flex;align-items:center;gap:12px;margin-left:16px;flex-shrink:0">
+    <a href="/pricing" style="color:var(--gray-light);text-decoration:none;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">Pricing</a>
     <a href="/login" style="color:var(--gray-light);text-decoration:none;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">Log in</a>
     <a href="/signup" class="nav-cta">Get Started</a>
   </div>

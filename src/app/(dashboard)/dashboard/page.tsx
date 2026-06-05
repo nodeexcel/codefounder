@@ -3,6 +3,7 @@ import { WelcomeBanner } from "@/components/dashboard/WelcomeBanner";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { AGENTS } from "@/lib/agents";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const activeAgents = [
   { ...AGENTS[0], status: "active" as const, callsToday: 12 },
@@ -39,7 +40,33 @@ const usageStats = [
   { label: "Leads captured", value: "34", limit: "—", pct: null },
 ];
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: subscription } = await supabase
+    .from("subscriptions")
+    .select("plan, status, created_at")
+    .eq("user_id", user?.id ?? "")
+    .maybeSingle();
+
+  const currentPlan = subscription?.plan
+    ? subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)
+    : "Free";
+
+  const trialDaysRemaining = subscription?.created_at
+    ? Math.max(
+        0,
+        14 -
+          Math.floor(
+            (Date.now() - new Date(subscription.created_at).getTime()) /
+              (1000 * 60 * 60 * 24),
+          ),
+      )
+    : 0;
+
   return (
     <>
       <DashboardNavbar
@@ -49,6 +76,25 @@ export default function DashboardPage() {
 
       <div className="space-y-6 p-4 sm:p-6 lg:p-8">
         <WelcomeBanner />
+
+        <Card padding="md">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-400">Current plan</p>
+              <p className="mt-1 text-2xl font-bold text-white">{currentPlan}</p>
+              <p className="mt-1 text-xs text-gray-500">
+                {trialDaysRemaining > 0
+                  ? `${trialDaysRemaining} trial day${trialDaysRemaining === 1 ? "" : "s"} remaining`
+                  : subscription?.status
+                    ? `Subscription status: ${subscription.status}`
+                    : "No active subscription"}
+              </p>
+            </div>
+            <Button href="/pricing" variant="outline">
+              Manage billing
+            </Button>
+          </div>
+        </Card>
 
         {/* Stats row */}
         <div className="grid gap-4 sm:grid-cols-3">
