@@ -2,13 +2,8 @@ import { DashboardNavbar } from "@/components/dashboard/Navbar";
 import { WelcomeBanner } from "@/components/dashboard/WelcomeBanner";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { AGENTS } from "@/lib/agents";
+import { AGENTS, type AgentType } from "@/lib/agents";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-const activeAgents = [
-  { ...AGENTS[0], status: "active" as const, callsToday: 12 },
-  { ...AGENTS[3], status: "active" as const, callsToday: 0 },
-];
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -33,6 +28,7 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const userId = user?.id ?? "";
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
@@ -43,30 +39,44 @@ export default async function DashboardPage() {
     { count: callsThisMonth },
     { data: durationRows },
     { count: leadsCount },
+    { data: liveSessions },
   ] = await Promise.all([
     supabase
       .from("subscriptions")
       .select("plan, status, created_at")
-      .eq("user_id", user?.id ?? "")
+      .eq("user_id", userId)
       .maybeSingle(),
     supabase
       .from("call_logs")
       .select("id, caller_number, duration, status, created_at")
+      .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(5),
     supabase
       .from("call_logs")
       .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
       .gte("created_at", startOfMonth.toISOString()),
     supabase
       .from("call_logs")
       .select("duration")
+      .eq("user_id", userId)
       .gte("created_at", startOfMonth.toISOString()),
     supabase
       .from("call_logs")
       .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
       .or("transcript.ilike.%appointment%,transcript.ilike.%booking%"),
+    supabase
+      .from("agent_wizard_sessions")
+      .select("agent_type")
+      .eq("user_id", userId)
+      .eq("status", "live"),
   ]);
+
+  const activeAgents = (liveSessions ?? [])
+    .map((s) => AGENTS.find((a) => a.id === (s.agent_type as AgentType)))
+    .filter(Boolean) as typeof AGENTS;
 
   const totalSeconds = durationRows?.reduce((sum, r) => sum + (r.duration ?? 0), 0) ?? 0;
   const aiMinutes = totalSeconds / 60;
@@ -162,29 +172,31 @@ export default async function DashboardPage() {
                 </Button>
               }
             />
-            <ul className="space-y-3">
-              {activeAgents.map((agent) => (
-                <li
-                  key={agent.id}
-                  className="flex items-center justify-between rounded-lg border border-[#222222] bg-black/50 px-4 py-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{agent.icon}</span>
-                    <div>
-                      <p className="font-medium text-white">{agent.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {agent.id === "voice"
-                          ? `${agent.callsToday} calls today`
-                          : "Running"}
-                      </p>
+            {activeAgents.length > 0 ? (
+              <ul className="space-y-3">
+                {activeAgents.map((agent) => (
+                  <li
+                    key={agent.id}
+                    className="flex items-center justify-between rounded-lg border border-[#222222] bg-black/50 px-4 py-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{agent.icon}</span>
+                      <div>
+                        <p className="font-medium text-white">{agent.name}</p>
+                        <p className="text-xs text-gray-500">Live</p>
+                      </div>
                     </div>
-                  </div>
-                  <span className="rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-medium text-green-400">
-                    Active
-                  </span>
-                </li>
-              ))}
-            </ul>
+                    <span className="rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-medium text-green-400">
+                      Active
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="py-4 text-center text-sm text-gray-500">
+                No active agents yet.
+              </p>
+            )}
             <div className="mt-4">
               <Button href="/wizard" variant="outline" size="sm" fullWidth>
                 + Launch another agent

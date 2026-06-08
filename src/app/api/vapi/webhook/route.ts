@@ -126,7 +126,29 @@ export async function POST(request: Request) {
   const agentId = call.assistantId ?? null;
   // Always mark as "ended" for end-of-call events regardless of what status field says
   const status = CALL_END_EVENTS.has(eventType) ? "ended" : (event.status ?? call.status ?? eventType);
-  const userId = call.metadata?.user_id ?? null;
+
+  const adminSupabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: { persistSession: false },
+  });
+
+  // Resolve user_id: explicit metadata wins; fall back to whichever user has a live voice agent.
+  // Once per-user assistant IDs are stored in voice_settings, filter by assistant_id here.
+  let userId: string | null = call.metadata?.user_id ?? null;
+  if (!userId && agentId) {
+    const { data: session } = await adminSupabase
+      .from("agent_wizard_sessions")
+      .select("user_id")
+      .eq("agent_type", "voice")
+      .eq("status", "live")
+      .limit(1)
+      .maybeSingle();
+    userId = session?.user_id ?? null;
+    if (userId) {
+      console.log("[vapi/webhook] resolved user_id from live session:", userId);
+    } else {
+      console.warn("[vapi/webhook] could not resolve user_id for assistant:", agentId);
+    }
+  }
 
   let duration: number | null = null;
   if (typeof event.durationSeconds === "number") {
@@ -150,10 +172,6 @@ export async function POST(request: Request) {
 
   console.log("[vapi/webhook] saving to Supabase:", record);
   console.log("[vapi/webhook] using Supabase URL:", supabaseUrl);
-
-  const adminSupabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
-    auth: { persistSession: false },
-  });
 
   const { error } = await adminSupabase
     .from("call_logs")

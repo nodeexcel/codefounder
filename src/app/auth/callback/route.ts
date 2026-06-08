@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -28,6 +29,61 @@ export async function GET(request: Request) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        // Safety net: DB trigger handles new users, but create the profile here
+        // in case it was missed (e.g. trigger not yet applied, or username conflict resolved differently).
+        const adminSupabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!,
+          { auth: { persistSession: false } }
+        );
+
+        const { data: existingProfile } = await adminSupabase
+          .from("profiles")
+          .select("id")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (!existingProfile) {
+          const email = user.email ?? "";
+          const localPart = email.split("@")[0];
+          // e.g. john.doe@gmail.com → john_doe
+          const baseUsername = localPart
+            .replace(/\./g, "_")
+            .replace(/[^a-z0-9_]/gi, "")
+            .toLowerCase();
+
+          const fullName =
+            (user.user_metadata?.full_name as string | undefined) ??
+            (user.user_metadata?.name as string | undefined) ??
+            localPart;
+
+          // Try base username; fall back to base + uid prefix on conflict
+          const { error: insertError } = await adminSupabase
+            .from("profiles")
+            .insert({
+              id: user.id,
+              username: baseUsername,
+              full_name: fullName,
+              email,
+            });
+
+          if (insertError?.code === "23505") {
+            // Unique violation on username — append uid prefix
+            await adminSupabase.from("profiles").insert({
+              id: user.id,
+              username: `${baseUsername}_${user.id.slice(0, 8)}`,
+              full_name: fullName,
+              email,
+            });
+          }
+        }
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
