@@ -383,3 +383,89 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding:48px 5
 .calendly-inline-widget{height:100%!important;min-width:0!important}
 .cal-setup-msg{padding:3rem 2rem;text-align:center;color:#888}
 .cal-setup-msg h3{font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:.75rem}
+
+/* ── Get Started button + nav: responsive sizing ── */
+@media(max-width:768px){
+  /* Reduce button padding so logo+auth fits comfortably at 481-640px */
+  .nav-cta{padding:8px 14px;font-size:13px}
+  /* Hide decorative hero bars — on mobile they span full viewport width
+     and white bars land over white text, making it unreadable */
+  .hero > div[style*="right:-40px"]{display:none}
+}
+@media(max-width:480px){
+  /* Keep button at 13px to match the inline-styled 'Log in' link visually */
+  .nav-cta{padding:8px 12px;font-size:13px}
+  /* Normalise 'Log in' font — it carries an inline font-size:14px so !important
+     is the only way to align it with the button at this breakpoint */
+  nav > div:last-child > a:not(.nav-cta){font-size:13px !important}
+}
+
+/* ── RESPONSIVE: TABLET (≤900px) ── */
+@media(max-width:900px){
+  /* Reduce the excessive 100px section padding down to something readable */
+  section{padding:60px 5%}
+  .demo-section,.roi-section,.call-player-section,.how,.beforeafter{padding:60px 5%}
+  .cta-section{padding:80px 5%}
+  .hero{padding:80px 5% 32px}
+  /* Override inline-styled FAQ section padding */
+  #faq{padding:60px 5% !important}
+  /* Tighten row gap for single-column grids */
+  .demo-inner,.contact-inner{gap:40px}
+  .roi-inner,.call-player-inner{gap:40px}
+  /* Scale down large stat numbers */
+  .stat-big{font-size:40px}
+  /* Body text in hero */
+  .hero p{font-size:16px}
+  /* Team grid: inline-styled div has no class so .team-grid rule never fires */
+  section.team > div{grid-template-columns:1fr !important}
+  /* FAQ: inline grid (1fr 1.6fr) → single column */
+  #faq > div{grid-template-columns:1fr !important;gap:40px !important}
+}
+
+/* ── RESPONSIVE: SMALL MOBILE (≤480px) ── */
+@media(max-width:480px){
+  /* Logo: hide wordmark text, shrink image so logo+auth buttons fit at 320px */
+  nav > a > span{display:none !important}
+  nav > a > img{height:40px !important;width:40px !important}
+  /* Further reduce section vertical padding */
+  section{padding:48px 5%}
+  .demo-section,.roi-section,.call-player-section,.how,.beforeafter{padding:48px 5%}
+  .cta-section{padding:60px 5%}
+  /* Nav is ~64px tall on mobile; 80px padding-top gives comfortable clearance.
+     min-height updated from 56px offset to the real 64px nav height. */
+  .hero{padding:80px 5% 32px;min-height:calc(100vh - 64px)}
+  /* Tighten hero content vertical spacing so it fits cleanly on short screens */
+  .hero-badge{margin-bottom:16px}
+  .hero p{margin-bottom:24px}
+  .hero-stats{margin-top:24px;padding-top:20px}
+  #faq{padding:48px 5% !important}
+  /* Text sizes */
+  .hero p{font-size:15px}
+  .stat-big{font-size:32px}
+  .stat-num{font-size:26px}
+  .section-title{font-size:clamp(22px,7vw,34px)}
+  /* 4-col stats → single column */
+  .stats-grid{grid-template-columns:1fr}
+  .stat-card{padding:28px 20px}
+  /* Hero stats row gap */
+  .hero-stats{gap:16px}
+  /* Card padding reductions */
+  .service-card{padding:28px 20px}
+  .team-card{padding:28px 20px}
+  .testi-card{padding:24px 16px}
+  .ba-card{padding:28px 20px}
+  /* Process: single column on very small screens */
+  .process-steps{grid-template-columns:1fr}
+  .process-desc-panel{padding:24px 20px}
+  .process-desc-inner.active{flex-direction:column;gap:16px}
+  .process-desc-num{font-size:40px;min-width:auto}
+  /* Footer: single column */
+  .footer-inner{grid-template-columns:1fr}
+  .footer-bottom{flex-direction:column;gap:8px;text-align:center}
+  /* Demo modal: reduce large inline padding on small phones */
+  #demo-modal > div{padding:24px 20px !important}
+  /* Demo form first/last name row: stack to single column */
+  #demo-modal form > div{grid-template-columns:1fr !important}
+  /* Privacy & Terms modals: reduce inline padding */
+  #privacyModal > div,#termsModal > div{padding:24px 20px !important}
+}

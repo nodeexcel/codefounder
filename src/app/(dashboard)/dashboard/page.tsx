@@ -10,35 +10,22 @@ const activeAgents = [
   { ...AGENTS[3], status: "active" as const, callsToday: 0 },
 ];
 
-const recentCalls = [
-  {
-    id: "1",
-    caller: "+1 (555) 234-8901",
-    duration: "4:32",
-    outcome: "Appointment booked",
-    time: "12 min ago",
-  },
-  {
-    id: "2",
-    caller: "+1 (555) 891-2200",
-    duration: "2:15",
-    outcome: "FAQ answered",
-    time: "1 hr ago",
-  },
-  {
-    id: "3",
-    caller: "+1 (555) 102-3344",
-    duration: "6:01",
-    outcome: "Transferred to human",
-    time: "3 hrs ago",
-  },
-];
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
-const usageStats = [
-  { label: "Calls this month", value: "148", limit: "500", pct: 30 },
-  { label: "AI minutes used", value: "6.2h", limit: "20h", pct: 31 },
-  { label: "Leads captured", value: "34", limit: "—", pct: null },
-];
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr${hrs === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}
 
 export default async function DashboardPage() {
   const supabase = await createServerSupabaseClient();
@@ -46,11 +33,55 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: subscription } = await supabase
-    .from("subscriptions")
-    .select("plan, status, created_at")
-    .eq("user_id", user?.id ?? "")
-    .maybeSingle();
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const [
+    { data: subscription },
+    { data: callLogs },
+    { count: callsThisMonth },
+    { data: durationRows },
+    { count: leadsCount },
+  ] = await Promise.all([
+    supabase
+      .from("subscriptions")
+      .select("plan, status, created_at")
+      .eq("user_id", user?.id ?? "")
+      .maybeSingle(),
+    supabase
+      .from("call_logs")
+      .select("id, caller_number, duration, status, created_at")
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("call_logs")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", startOfMonth.toISOString()),
+    supabase
+      .from("call_logs")
+      .select("duration")
+      .gte("created_at", startOfMonth.toISOString()),
+    supabase
+      .from("call_logs")
+      .select("id", { count: "exact", head: true })
+      .or("transcript.ilike.%appointment%,transcript.ilike.%booking%"),
+  ]);
+
+  const totalSeconds = durationRows?.reduce((sum, r) => sum + (r.duration ?? 0), 0) ?? 0;
+  const aiMinutes = totalSeconds / 60;
+  const aiMinutesDisplay =
+    aiMinutes >= 60 ? `${(aiMinutes / 60).toFixed(1)}h` : `${Math.round(aiMinutes)}m`;
+  const callCount = callsThisMonth ?? 0;
+  const callPct = Math.min(100, Math.round((callCount / 500) * 100));
+  const minuteLimit = 20 * 60;
+  const minutePct = Math.min(100, Math.round((totalSeconds / minuteLimit) * 100));
+
+  const usageStats = [
+    { label: "Calls this month", value: String(callCount), limit: "500", pct: callPct },
+    { label: "AI minutes used", value: aiMinutesDisplay, limit: "20h", pct: minutePct },
+    { label: "Leads captured", value: String(leadsCount ?? 0), limit: "—", pct: null },
+  ];
 
   const currentPlan = subscription?.plan
     ? subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)
@@ -167,23 +198,33 @@ export default async function DashboardPage() {
               title="Recent call logs"
               description="Latest Voice Agent activity"
             />
-            <ul className="divide-y divide-[#222222]">
-              {recentCalls.map((call) => (
-                <li
-                  key={call.id}
-                  className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
-                >
-                  <div>
-                    <p className="font-medium text-white">{call.caller}</p>
-                    <p className="text-sm text-gray-400">{call.outcome}</p>
-                  </div>
-                  <div className="text-right text-sm">
-                    <p className="text-gray-300">{call.duration}</p>
-                    <p className="text-gray-500">{call.time}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            {callLogs && callLogs.length > 0 ? (
+              <ul className="divide-y divide-[#222222]">
+                {callLogs.map((call) => (
+                  <li
+                    key={call.id}
+                    className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+                  >
+                    <div>
+                      <p className="font-medium text-white">
+                        {call.caller_number ?? "Web Call"}
+                      </p>
+                      <p className="text-sm text-gray-400 capitalize">{call.status}</p>
+                    </div>
+                    <div className="text-right text-sm">
+                      <p className="text-gray-300">
+                        {call.duration != null ? formatDuration(call.duration) : "—"}
+                      </p>
+                      <p className="text-gray-500">{timeAgo(call.created_at)}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="py-6 text-center text-sm text-gray-500">
+                No calls recorded yet.
+              </p>
+            )}
           </Card>
         </div>
 

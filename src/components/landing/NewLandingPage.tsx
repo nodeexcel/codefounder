@@ -24,15 +24,16 @@ declare global {
 }
 
 function patchLandingHtml(html: string): string {
-  return html
+  return html.replace(/\r\n/g, "\n")
     .replace(
       '<a href="#" style="display:flex;align-items:center;gap:16px;text-decoration:none">',
       '<a href="/" style="display:flex;align-items:center;gap:16px;text-decoration:none">',
     )
     .replace(
       "</div>\n</nav>",
-      `  <div style="display:flex;align-items:center;gap:12px;margin-left:16px;flex-shrink:0">
-    <a href="/pricing" style="color:var(--gray-light);text-decoration:none;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">Pricing</a>
+      `    <a href="/pricing">Pricing</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
     <a href="/login" style="color:var(--gray-light);text-decoration:none;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">Log in</a>
     <a href="/signup" class="nav-cta">Get Started</a>
   </div>
