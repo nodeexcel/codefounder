@@ -55,17 +55,31 @@ export default async function AdminUsersPage({
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-[#222222] bg-black/80 px-4 backdrop-blur-md sm:px-6 lg:px-8">
+      <header
+        className="sticky top-0 z-40 flex min-h-[60px] items-center justify-between gap-4 px-5 py-3 sm:px-7 lg:px-8"
+        style={{
+          background: "rgba(10, 10, 10, 0.85)",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+        }}
+      >
         <div>
-          <h1 className="text-lg font-semibold text-white sm:text-xl">
+          <h1
+            className="text-base font-semibold text-white sm:text-lg font-[Outfit]"
+            style={{ letterSpacing: "-0.015em" }}
+          >
             All Users
           </h1>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
             {users.length} user{users.length !== 1 ? "s" : ""}
             {q ? ` matching "${q}"` : ""}
           </p>
         </div>
-        <span className="rounded-full bg-[#f97316]/10 px-3 py-1 text-xs font-semibold text-[#f97316]">
+        <span
+          className="rounded-full px-3 py-1 text-xs font-semibold font-[Outfit]"
+          style={{ background: "rgba(232,123,44,0.1)", color: "#E87B2C" }}
+        >
           Admin
         </span>
       </header>
@@ -79,18 +93,31 @@ export default async function AdminUsersPage({
               name="q"
               defaultValue={q}
               placeholder="Search by name, email, or username…"
-              className="flex-1 rounded-lg border border-[#222222] bg-[#111111] px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-[#f97316] focus:outline-none"
+              className="flex-1 rounded-lg px-4 py-2.5 text-sm text-white placeholder-[#555] focus:outline-none transition-colors"
+              style={{
+                background: "#161616",
+                border: "1px solid rgba(255,255,255,0.08)",
+              }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(232,123,44,0.5)")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
             />
             <button
               type="submit"
-              className="rounded-lg bg-[#f97316] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#ea580c]"
+              className="rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 font-[Outfit]"
+              style={{ background: "#E87B2C" }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = "#C4611A")}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = "#E87B2C")}
             >
               Search
             </button>
             {q && (
               <a
                 href="/admin/users"
-                className="flex items-center rounded-lg border border-[#222222] px-4 py-2.5 text-sm text-gray-400 transition-colors hover:text-white"
+                className="flex items-center rounded-lg px-4 py-2.5 text-sm transition-colors font-[Outfit]"
+                style={{
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  color: "rgba(255,255,255,0.4)",
+                }}
               >
                 Clear
               </a>
@@ -100,10 +127,13 @@ export default async function AdminUsersPage({
 
         {/* Table */}
         {users.length === 0 ? (
-          <div className="rounded-xl border border-[#222222] bg-[#111111] py-16 text-center">
-            <p className="text-lg font-medium text-white">No users found</p>
+          <div
+            className="rounded-2xl py-16 text-center"
+            style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.07)" }}
+          >
+            <p className="text-lg font-medium text-white font-[Outfit]">No users found</p>
             {q && (
-              <p className="mt-2 text-sm text-gray-400">
+              <p className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
                 No results for &ldquo;{q}&rdquo;. Try a different search.
               </p>
             )}
@@ -111,45 +141,60 @@ export default async function AdminUsersPage({
         ) : (
           <>
             {/* Desktop table */}
-            <div className="hidden rounded-xl border border-[#222222] bg-[#111111] md:block">
+            <div
+              className="hidden rounded-2xl md:block overflow-hidden"
+              style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.07)" }}
+            >
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-[#222222]">
-                    {["Name", "Email", "Username", "Plan", "Status", "Joined"].map(
-                      (col) => (
-                        <th
-                          key={col}
-                          className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"
-                        >
-                          {col}
-                        </th>
-                      ),
-                    )}
+                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                    {["Name", "Email", "Username", "Plan", "Status", "Joined"].map((col) => (
+                      <th
+                        key={col}
+                        className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider font-[Outfit]"
+                        style={{ color: "rgba(255,255,255,0.35)" }}
+                      >
+                        {col}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1a1a1a]">
-                  {users.map((u) => (
-                    <tr key={u.id} className="hover:bg-[#161616]">
+                <tbody>
+                  {users.map((u, i) => (
+                    <tr
+                      key={u.id}
+                      className="transition-colors hover:bg-white/[0.02]"
+                      style={{ borderTop: i > 0 ? "1px solid rgba(255,255,255,0.05)" : undefined }}
+                    >
                       <td className="px-5 py-3.5">
-                        <p className="font-medium text-white">
-                          {u.full_name || "—"}
+                        <p className="font-medium text-white">{u.full_name || "—"}</p>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <p className="text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
+                          {u.email}
                         </p>
                       </td>
                       <td className="px-5 py-3.5">
-                        <p className="text-sm text-gray-300">{u.email}</p>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <p className="text-sm text-gray-400">
+                        <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
                           @{u.username}
                         </p>
                       </td>
                       <td className="px-5 py-3.5">
                         {u.subscription ? (
-                          <span className="rounded-full bg-[#f97316]/10 px-2.5 py-0.5 text-xs font-medium capitalize text-[#f97316]">
+                          <span
+                            className="rounded-full px-2.5 py-0.5 text-xs font-medium capitalize font-[Outfit]"
+                            style={{ background: "rgba(232,123,44,0.1)", color: "#E87B2C" }}
+                          >
                             {u.subscription.plan}
                           </span>
                         ) : (
-                          <span className="rounded-full bg-[#222222] px-2.5 py-0.5 text-xs font-medium text-gray-500">
+                          <span
+                            className="rounded-full px-2.5 py-0.5 text-xs font-medium font-[Outfit]"
+                            style={{
+                              background: "rgba(255,255,255,0.06)",
+                              color: "rgba(255,255,255,0.4)",
+                            }}
+                          >
                             Free
                           </span>
                         )}
@@ -160,18 +205,18 @@ export default async function AdminUsersPage({
                             className={[
                               "rounded-full px-2.5 py-0.5 text-xs font-medium",
                               u.subscription.status === "active"
-                                ? "bg-green-500/10 text-green-400"
+                                ? "bg-emerald-500/10 text-emerald-400"
                                 : "bg-yellow-500/10 text-yellow-400",
                             ].join(" ")}
                           >
                             {u.subscription.status}
                           </span>
                         ) : (
-                          <span className="text-xs text-gray-600">—</span>
+                          <span className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>—</span>
                         )}
                       </td>
                       <td className="px-5 py-3.5">
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm" style={{ color: "rgba(255,255,255,0.35)" }}>
                           {formatDate(u.created_at)}
                         </p>
                       </td>
@@ -182,31 +227,43 @@ export default async function AdminUsersPage({
             </div>
 
             {/* Mobile card list */}
-            <div className="space-y-3 md:hidden">
+            <div className="space-y-2 md:hidden">
               {users.map((u) => (
                 <div
                   key={u.id}
-                  className="rounded-xl border border-[#222222] bg-[#111111] px-4 py-4"
+                  className="rounded-xl px-4 py-4"
+                  style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.07)" }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-medium text-white">
-                        {u.full_name || "—"}
+                      <p className="font-medium text-white">{u.full_name || "—"}</p>
+                      <p className="text-sm" style={{ color: "rgba(255,255,255,0.45)" }}>
+                        {u.email}
                       </p>
-                      <p className="text-sm text-gray-400">{u.email}</p>
-                      <p className="text-xs text-gray-600">@{u.username}</p>
+                      <p className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
+                        @{u.username}
+                      </p>
                     </div>
                     <div className="shrink-0 text-right">
                       {u.subscription ? (
-                        <span className="rounded-full bg-[#f97316]/10 px-2.5 py-0.5 text-xs font-medium capitalize text-[#f97316]">
+                        <span
+                          className="rounded-full px-2.5 py-0.5 text-xs font-medium capitalize font-[Outfit]"
+                          style={{ background: "rgba(232,123,44,0.1)", color: "#E87B2C" }}
+                        >
                           {u.subscription.plan}
                         </span>
                       ) : (
-                        <span className="rounded-full bg-[#222222] px-2.5 py-0.5 text-xs font-medium text-gray-500">
+                        <span
+                          className="rounded-full px-2.5 py-0.5 text-xs font-medium font-[Outfit]"
+                          style={{
+                            background: "rgba(255,255,255,0.06)",
+                            color: "rgba(255,255,255,0.4)",
+                          }}
+                        >
                           Free
                         </span>
                       )}
-                      <p className="mt-1 text-xs text-gray-600">
+                      <p className="mt-1 text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
                         {formatDate(u.created_at)}
                       </p>
                     </div>

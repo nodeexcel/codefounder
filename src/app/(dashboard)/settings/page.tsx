@@ -199,7 +199,7 @@ function ProfileTab({ push }: { push: (msg: string, type: "success" | "error") =
         </label>
         <div
           className="flex items-center gap-3 rounded-lg px-4 py-2.5"
-          style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}
+          style={{ background: "#131313", border: "1px solid rgba(255,255,255,0.07)" }}
         >
           <span className="flex-1 text-sm text-[#888]">{email}</span>
           <span
@@ -370,7 +370,7 @@ function BusinessTab() {
     return (
       <div
         className="flex flex-col items-center gap-4 rounded-xl py-14 text-center"
-        style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}
+        style={{ background: "#131313", border: "1px solid rgba(255,255,255,0.07)" }}
       >
         <div
           className="flex h-12 w-12 items-center justify-center rounded-xl text-2xl"
@@ -470,7 +470,7 @@ function InfoSection({ title, children }: { title: string; children: React.React
   return (
     <div
       className="rounded-xl px-5 py-4 transition-all duration-200"
-      style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}
+      style={{ background: "#131313", border: "1px solid rgba(255,255,255,0.07)" }}
     >
       <h4 className="mb-3 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[#E87B2C]/80">
         {title}
@@ -515,7 +515,7 @@ export default function SettingsPage() {
           {/* Tab nav */}
           <div
             className="mb-6 flex gap-1 rounded-xl p-1"
-            style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}
+            style={{ background: "#131313", border: "1px solid rgba(255,255,255,0.07)" }}
           >
             {TABS.map((tab) => (
               <button
@@ -553,7 +553,7 @@ export default function SettingsPage() {
           {/* Tab content */}
           <div
             className="rounded-xl p-5 sm:p-6"
-            style={{ background: "#1e1e1e", border: "1px solid rgba(255,255,255,0.07)" }}
+            style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.07)" }}
           >
             {activeTab === "profile" && <ProfileTab push={push} />}
             {activeTab === "security" && <SecurityTab push={push} />}

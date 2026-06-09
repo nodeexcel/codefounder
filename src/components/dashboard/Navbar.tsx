@@ -50,52 +50,50 @@ export function DashboardNavbar({ title, subtitle }: DashboardNavbarProps) {
 
   return (
     <header
-      className="sticky top-0 z-40 flex min-h-16 items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8"
+      className="sticky top-0 z-40 flex min-h-[60px] items-center justify-between gap-4 px-5 py-3 sm:px-7 lg:px-8"
       style={{
-        background: "rgba(20, 20, 20, 0.8)",
-        borderBottom: "1px solid rgba(255, 255, 255, 0.07)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
+        background: "rgba(10, 10, 10, 0.85)",
+        borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
       }}
     >
       {/* Title block */}
       <div className="min-w-0">
         <h1
-          className="truncate text-lg font-semibold text-white sm:text-xl"
-          style={{ fontFamily: "Outfit, sans-serif", letterSpacing: "-0.01em" }}
+          className="truncate text-base font-semibold text-white sm:text-lg"
+          style={{ fontFamily: "Outfit, sans-serif", letterSpacing: "-0.015em" }}
         >
           {title}
         </h1>
         {subtitle && (
-          <p className="truncate text-xs text-white/40 sm:text-sm">{subtitle}</p>
-        )}
-        {!profileLoading && profile && (
-          <p className="mt-0.5 text-xs text-[#E87B2C] sm:hidden">
-            Hi, {displayName}
+          <p className="truncate text-xs sm:text-sm" style={{ color: "rgba(255,255,255,0.35)" }}>
+            {subtitle}
           </p>
         )}
       </div>
 
       {/* Right side */}
-      <div className="flex shrink-0 items-center gap-3">
+      <div className="flex shrink-0 items-center gap-2">
         {!profileLoading && (profile || user) && (
-          <div className="flex items-center gap-3">
-            {/* Name + username (desktop) */}
+          <div className="flex items-center gap-2.5">
             <div className="hidden text-right sm:block">
-              <p className="text-sm font-medium text-white/90" style={{ fontFamily: "Outfit, sans-serif" }}>
-                {profile?.full_name ?? user?.email}
+              <p
+                className="text-sm font-medium"
+                style={{ color: "rgba(255,255,255,0.85)", fontFamily: "Outfit, sans-serif" }}
+              >
+                {displayName}
               </p>
-              <p className="text-xs text-white/35">
+              <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.3)" }}>
                 {profile ? `@${profile.username}` : user?.email}
               </p>
             </div>
 
-            {/* Avatar */}
             <div
-              className="flex h-9 w-9 cursor-default items-center justify-center rounded-full text-sm font-bold text-white transition-all duration-200 hover:scale-105"
+              className="flex h-8 w-8 cursor-default items-center justify-center rounded-full text-[12px] font-bold text-white"
               style={{
                 background: "linear-gradient(135deg, #E87B2C 0%, #f59e0b 100%)",
-                boxShadow: "0 0 0 2px rgba(232, 123, 44, 0.2), 0 4px 12px rgba(232, 123, 44, 0.25)",
+                boxShadow: "0 0 0 2px rgba(232, 123, 44, 0.15), 0 2px 8px rgba(232, 123, 44, 0.2)",
                 fontFamily: "Outfit, sans-serif",
               }}
               title={profile?.full_name ?? user?.email ?? "Account"}
@@ -105,19 +103,20 @@ export function DashboardNavbar({ title, subtitle }: DashboardNavbarProps) {
           </div>
         )}
 
-        {/* Sign out */}
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white/40 transition-all duration-200 hover:text-white/80"
-          style={{ fontFamily: "Outfit, sans-serif" }}
+          className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-200"
+          style={{ color: "rgba(255,255,255,0.3)", fontFamily: "Outfit, sans-serif" }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)";
+            (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)";
+            (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.7)";
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLElement).style.background = "";
+            (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.3)";
           }}
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
             <polyline points="16 17 21 12 16 7" />
             <line x1="21" y1="12" x2="9" y2="12" />

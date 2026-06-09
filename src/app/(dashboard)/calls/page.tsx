@@ -144,8 +144,12 @@ export default function CallsPage() {
             placeholder="Search by caller name or number…"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            style={inputStyle}
-            className="flex-1 placeholder-[#888] focus:border-[#E87B2C]/50"
+            style={{
+              ...inputStyle,
+              background: "#161616",
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+            className="flex-1 placeholder-[#555] focus:border-[#E87B2C]/50"
             onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(232,123,44,0.5)")}
             onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
           />
@@ -153,15 +157,19 @@ export default function CallsPage() {
             type="date"
             value={dateFilter}
             onChange={(e) => handleDateChange(e.target.value)}
-            style={{ ...inputStyle, width: "auto", colorScheme: "dark" }}
+            style={{ ...inputStyle, background: "#161616", border: "1px solid rgba(255,255,255,0.08)", width: "auto", colorScheme: "dark" }}
             onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(232,123,44,0.5)")}
             onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
           />
           {dateFilter && (
             <button
               onClick={() => handleDateChange("")}
-              className="rounded-lg px-4 py-2.5 text-sm text-[#888] transition-all duration-200 hover:text-white"
-              style={{ background: "#1e1e1e", border: "1px solid rgba(255,255,255,0.08)" }}
+              className="rounded-lg px-4 py-2.5 text-sm transition-all duration-200 hover:text-white"
+              style={{
+                background: "#161616",
+                border: "1px solid rgba(255,255,255,0.08)",
+                color: "rgba(255,255,255,0.4)",
+              }}
             >
               Clear
             </button>
@@ -187,18 +195,20 @@ export default function CallsPage() {
         {/* Empty state */}
         {!loading && calls.length === 0 && (
           <div
-            className="flex flex-col items-center gap-4 rounded-xl py-20 text-center"
-            style={{ background: "#1e1e1e", border: "1px solid rgba(255,255,255,0.07)" }}
+            className="flex flex-col items-center gap-4 rounded-2xl py-20 text-center"
+            style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.07)" }}
           >
             <div
-              className="flex h-14 w-14 items-center justify-center rounded-xl text-2xl"
-              style={{ background: "rgba(232,123,44,0.1)", color: "#E87B2C" }}
+              className="flex h-12 w-12 items-center justify-center rounded-xl"
+              style={{ background: "rgba(232,123,44,0.08)", color: "#E87B2C" }}
             >
-              ☏
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.15 12 19.79 19.79 0 0 1 1.08 3.4 2 2 0 0 1 3.05 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16z" />
+              </svg>
             </div>
             <div>
               <p className="font-[Outfit] text-lg font-medium text-white">No calls yet</p>
-              <p className="mt-1 text-sm text-[#888]">
+              <p className="mt-1 text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
                 {search || dateFilter
                   ? "No calls match your filters."
                   : "Your Voice Agent calls will appear here."}
@@ -209,7 +219,7 @@ export default function CallsPage() {
 
         {/* Call list */}
         {!loading && calls.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {calls.map((call) => {
               const expanded = expandedId === call.id;
               return (
@@ -217,11 +227,11 @@ export default function CallsPage() {
                   key={call.id}
                   className="overflow-hidden rounded-xl transition-all duration-200"
                   style={{
-                    background: "#1e1e1e",
+                    background: "#161616",
                     border: expanded
-                      ? "1px solid rgba(232,123,44,0.3)"
+                      ? "1px solid rgba(232,123,44,0.25)"
                       : "1px solid rgba(255,255,255,0.07)",
-                    boxShadow: expanded ? "0 4px 20px rgba(232,123,44,0.06)" : undefined,
+                    boxShadow: expanded ? "0 4px 20px rgba(232,123,44,0.05)" : undefined,
                   }}
                 >
                   {/* Summary row */}

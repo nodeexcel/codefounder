@@ -36,10 +36,12 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#0a0a0a] text-white">
       <AdminSidebar />
-      <div className="lg:pl-64">{children}</div>
-      <div className="h-16 lg:hidden" aria-hidden />
+      <div className="lg:pl-64">
+        {children}
+        <div className="h-16 lg:hidden" aria-hidden />
+      </div>
     </div>
   );
 }

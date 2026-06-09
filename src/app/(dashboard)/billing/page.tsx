@@ -200,9 +200,9 @@ export default async function BillingPage() {
 
           {/* Current Plan */}
           <section
-            className="group relative overflow-hidden rounded-xl p-6 transition-all duration-300 hover:shadow-lg hover:shadow-[#E87B2C]/5"
+            className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:shadow-lg hover:shadow-[#E87B2C]/5"
             style={{
-              background: "#1e1e1e",
+              background: "#161616",
               border: isSubscribed ? "1px solid rgba(232,123,44,0.2)" : "1px solid rgba(255,255,255,0.07)",
             }}
           >
@@ -295,8 +295,8 @@ export default async function BillingPage() {
 
           {/* Usage */}
           <section
-            className="group relative overflow-hidden rounded-xl p-6 transition-all duration-300 hover:shadow-lg hover:shadow-[#E87B2C]/5"
-            style={{ background: "#1e1e1e", border: "1px solid rgba(255,255,255,0.07)" }}
+            className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:shadow-lg hover:shadow-[#E87B2C]/5"
+            style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.07)" }}
           >
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-[#E87B2C]/40 via-[#f59e0b]/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
             <div className="mb-5 flex items-center justify-between">
@@ -320,8 +320,8 @@ export default async function BillingPage() {
 
           {/* Invoice History */}
           <section
-            className="group relative overflow-hidden rounded-xl p-6 transition-all duration-300 hover:shadow-lg hover:shadow-[#E87B2C]/5"
-            style={{ background: "#1e1e1e", border: "1px solid rgba(255,255,255,0.07)" }}
+            className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:shadow-lg hover:shadow-[#E87B2C]/5"
+            style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.07)" }}
           >
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-[#E87B2C]/40 via-[#f59e0b]/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
             <p className="mb-5 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[#E87B2C]">

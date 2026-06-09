@@ -56,10 +56,15 @@ export default async function AgentsPage() {
       />
 
       <div className="p-4 sm:p-6 lg:p-8">
-        <p className="mb-6 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[#E87B2C]">
-          All Agents
-        </p>
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="mb-6 flex items-center justify-between">
+          <p className="font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[#E87B2C]">
+            All Agents
+          </p>
+          <Button href="/wizard" variant="primary" size="sm">
+            + New agent
+          </Button>
+        </div>
+        <div className="grid gap-5 md:grid-cols-2">
           {AGENTS.map((agent) => {
             const session = sessionMap.get(agent.id);
             const isLive = session?.status === "live";
@@ -73,126 +78,121 @@ export default async function AgentsPage() {
               <div
                 key={agent.id}
                 className={[
-                  "group relative overflow-hidden rounded-xl p-8 transition-all duration-300",
-                  isComingSoon ? "opacity-70" : "hover:-translate-y-0.5",
+                  "group relative overflow-hidden rounded-2xl p-6 transition-all duration-300",
+                  isComingSoon ? "opacity-60" : "hover:-translate-y-0.5",
                 ].join(" ")}
                 style={{
-                  background: "#1e1e1e",
+                  background: "#161616",
                   border: isLive
-                    ? "1px solid rgba(232,123,44,0.3)"
+                    ? "1px solid rgba(232,123,44,0.22)"
                     : "1px solid rgba(255,255,255,0.07)",
-                  boxShadow: isLive ? "0 0 30px rgba(232, 123, 44, 0.06)" : undefined,
+                  boxShadow: isLive ? "0 0 40px rgba(232, 123, 44, 0.05)" : undefined,
                 }}
               >
-                {/* Top accent line */}
                 <div
-                  className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-[#E87B2C]/60 via-[#f59e0b]/30 to-transparent transition-opacity duration-300"
-                  style={{ opacity: isLive ? 0.8 : 0 }}
+                  className="pointer-events-none absolute inset-x-0 top-0 h-px transition-opacity duration-300"
+                  style={{
+                    background: "linear-gradient(90deg, #E87B2C, #f59e0b, transparent)",
+                    opacity: isLive ? 0.6 : 0,
+                  }}
                 />
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-[#E87B2C]/60 via-[#f59e0b]/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div
+                  className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-[#E87B2C]/50 via-[#f59e0b]/25 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                />
 
-                {/* Live ambient glow */}
                 {isLive && (
                   <div
-                    className="pointer-events-none absolute -top-6 -right-6 h-24 w-24 rounded-full opacity-15"
-                    style={{ background: "radial-gradient(circle, rgba(232,123,44,0.8) 0%, transparent 70%)" }}
+                    className="pointer-events-none absolute -top-8 -right-8 h-32 w-32 rounded-full opacity-10"
+                    style={{ background: "radial-gradient(circle, #E87B2C 0%, transparent 70%)" }}
                   />
                 )}
 
                 {/* Header */}
-                <div className="relative flex items-start justify-between gap-4">
-                  <div className="flex gap-4">
-                    <div
-                      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl text-3xl transition-all duration-300 group-hover:scale-105"
-                      style={{
-                        background: isLive ? "rgba(232,123,44,0.12)" : "rgba(255,255,255,0.05)",
-                        boxShadow: isLive ? "0 0 16px rgba(232,123,44,0.15)" : undefined,
-                      }}
-                    >
-                      {agent.icon}
+                <div className="relative flex items-start gap-4">
+                  <div
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl"
+                    style={{
+                      background: isLive ? "rgba(232,123,44,0.1)" : "rgba(255,255,255,0.05)",
+                    }}
+                  >
+                    {agent.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-[Outfit] text-lg font-semibold text-white">
+                        {agent.name}
+                      </h3>
+                      {isComingSoon ? (
+                        <span
+                          className="rounded-full px-2.5 py-0.5 text-xs font-medium"
+                          style={{
+                            background: "rgba(255,255,255,0.06)",
+                            color: "rgba(255,255,255,0.4)",
+                            border: "1px solid rgba(255,255,255,0.08)",
+                          }}
+                        >
+                          Soon
+                        </span>
+                      ) : isLive ? (
+                        <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          Live
+                        </span>
+                      ) : (
+                        <span
+                          className="rounded-full px-2.5 py-0.5 text-xs font-medium"
+                          style={{
+                            background: "rgba(255,255,255,0.06)",
+                            color: "rgba(255,255,255,0.4)",
+                            border: "1px solid rgba(255,255,255,0.08)",
+                          }}
+                        >
+                          Not set up
+                        </span>
+                      )}
                     </div>
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-[Outfit] text-xl font-semibold text-white">
-                          {agent.name}
-                        </h3>
-                        {isComingSoon ? (
-                          <span
-                            className="rounded-full px-2.5 py-0.5 text-xs font-medium text-[#888]"
-                            style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.08)" }}
-                          >
-                            Coming Soon
-                          </span>
-                        ) : isLive ? (
-                          <span className="flex items-center gap-1.5 rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-medium text-green-400">
-                            <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-                            Live
-                          </span>
-                        ) : (
-                          <span
-                            className="rounded-full px-2.5 py-0.5 text-xs font-medium text-[#888]"
-                            style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.08)" }}
-                          >
-                            Not configured
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-1.5 text-sm leading-relaxed text-[#AAAAAA]">
-                        {agent.description}
-                      </p>
-                    </div>
+                    <p className="mt-1 text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.5)" }}>
+                      {agent.description}
+                    </p>
                   </div>
                 </div>
 
-                {/* Live agent details */}
+                {/* Live stats */}
                 {isLive && (
                   <div
-                    className="mt-5 rounded-lg px-4 py-3"
-                    style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}
+                    className="mt-4 rounded-xl px-4 py-3"
+                    style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
                   >
                     <dl className="space-y-1.5 text-sm">
                       {business.businessName && (
                         <div className="flex justify-between gap-4">
-                          <dt className="text-[#888]">Business</dt>
-                          <dd className="truncate text-right font-medium text-white">
-                            {business.businessName}
-                          </dd>
-                        </div>
-                      )}
-                      {business.phone && (
-                        <div className="flex justify-between gap-4">
-                          <dt className="text-[#888]">Phone</dt>
-                          <dd className="font-medium text-white">{business.phone}</dd>
+                          <dt style={{ color: "rgba(255,255,255,0.4)" }}>Business</dt>
+                          <dd className="truncate text-right font-medium text-white">{business.businessName}</dd>
                         </div>
                       )}
                       {voice.agentName && (
                         <div className="flex justify-between gap-4">
-                          <dt className="text-[#888]">Agent name</dt>
+                          <dt style={{ color: "rgba(255,255,255,0.4)" }}>Agent</dt>
                           <dd className="font-medium text-white">{voice.agentName}</dd>
                         </div>
                       )}
                       {voice.tone && (
                         <div className="flex justify-between gap-4">
-                          <dt className="text-[#888]">Voice tone</dt>
+                          <dt style={{ color: "rgba(255,255,255,0.4)" }}>Tone</dt>
                           <dd className="font-medium text-white">{voice.tone}</dd>
                         </div>
                       )}
                       {agent.id === "voice" && (
                         <>
-                          <div
-                            className="my-1"
-                            style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
-                          />
+                          <div className="my-1.5" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }} />
                           <div className="flex justify-between gap-4">
-                            <dt className="text-[#888]">Total calls</dt>
-                            <dd className="font-medium text-[#E87B2C]">{totalCalls ?? 0}</dd>
+                            <dt style={{ color: "rgba(255,255,255,0.4)" }}>Total calls</dt>
+                            <dd className="font-semibold text-[#E87B2C]">{totalCalls ?? 0}</dd>
                           </div>
                           {lastCall?.created_at && (
                             <div className="flex justify-between gap-4">
-                              <dt className="text-[#888]">Last call</dt>
-                              <dd className="font-medium text-white">
-                                {timeAgo(lastCall.created_at)}
-                              </dd>
+                              <dt style={{ color: "rgba(255,255,255,0.4)" }}>Last call</dt>
+                              <dd className="font-medium text-white">{timeAgo(lastCall.created_at)}</dd>
                             </div>
                           )}
                         </>
@@ -202,12 +202,16 @@ export default async function AgentsPage() {
                 )}
 
                 {/* Feature chips */}
-                <ul className="mt-4 flex flex-wrap gap-2">
+                <ul className="mt-4 flex flex-wrap gap-1.5">
                   {agent.features.map((feature) => (
                     <li
                       key={feature}
-                      className="rounded-md px-2 py-1 text-xs text-[#888] transition-colors duration-200 hover:text-[#AAAAAA]"
-                      style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}
+                      className="rounded-md px-2.5 py-1 text-xs"
+                      style={{
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(255,255,255,0.07)",
+                        color: "rgba(255,255,255,0.45)",
+                      }}
                     >
                       {feature}
                     </li>
@@ -215,7 +219,7 @@ export default async function AgentsPage() {
                 </ul>
 
                 {/* Actions */}
-                <div className="mt-5 flex flex-wrap gap-3">
+                <div className="mt-4 flex flex-wrap gap-2.5">
                   {isComingSoon ? (
                     <Button variant="secondary" size="md" disabled>
                       Coming Soon
@@ -227,7 +231,7 @@ export default async function AgentsPage() {
                       </Button>
                       {agent.id === "voice" && (
                         <Button href="/calls" variant="ghost" size="md">
-                          View call logs
+                          Call logs
                         </Button>
                       )}
                     </>

@@ -93,42 +93,69 @@ export default async function AdminDashboardPage() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-[#222222] bg-black/80 px-4 backdrop-blur-md sm:px-6 lg:px-8">
+      <header
+        className="sticky top-0 z-40 flex min-h-[60px] items-center justify-between gap-4 px-5 py-3 sm:px-7 lg:px-8"
+        style={{
+          background: "rgba(10, 10, 10, 0.85)",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+        }}
+      >
         <div>
-          <h1 className="text-lg font-semibold text-white sm:text-xl">
+          <h1
+            className="text-base font-semibold text-white sm:text-lg font-[Outfit]"
+            style={{ letterSpacing: "-0.015em" }}
+          >
             Admin Overview
           </h1>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
             Platform-wide metrics
           </p>
         </div>
-        <span className="rounded-full bg-[#f97316]/10 px-3 py-1 text-xs font-semibold text-[#f97316]">
+        <span
+          className="rounded-full px-3 py-1 text-xs font-semibold font-[Outfit]"
+          style={{ background: "rgba(232,123,44,0.1)", color: "#E87B2C" }}
+        >
           Admin
         </span>
       </header>
 
-      <div className="space-y-8 p-4 sm:p-6 lg:p-8">
+      <div className="space-y-6 p-4 sm:p-6 lg:p-8">
         {/* Stat cards */}
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className={[
-                "rounded-xl border p-5",
-                stat.highlight
-                  ? "border-[#f97316]/30 bg-[#f97316]/5"
-                  : "border-[#222222] bg-[#111111]",
-              ].join(" ")}
+              className="group relative overflow-hidden rounded-2xl p-5 transition-all duration-300"
+              style={{
+                background: stat.highlight ? "rgba(232,123,44,0.05)" : "#161616",
+                border: stat.highlight ? "1px solid rgba(232,123,44,0.2)" : "1px solid rgba(255,255,255,0.07)",
+              }}
             >
+              {stat.highlight && (
+                <div
+                  className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-60"
+                  style={{ background: "linear-gradient(90deg, transparent, #E87B2C, transparent)" }}
+                />
+              )}
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{stat.label}</p>
-                <span className="text-lg text-gray-600">{stat.icon}</span>
+                <p className="text-xs font-medium font-[Outfit]" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  {stat.label}
+                </p>
+                <span
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-base"
+                  style={{
+                    background: stat.highlight ? "rgba(232,123,44,0.1)" : "rgba(255,255,255,0.05)",
+                    color: stat.highlight ? "#E87B2C" : "rgba(255,255,255,0.4)",
+                  }}
+                >
+                  {stat.icon}
+                </span>
               </div>
               <p
-                className={[
-                  "mt-2 text-3xl font-bold",
-                  stat.highlight ? "text-[#f97316]" : "text-white",
-                ].join(" ")}
+                className="mt-3 font-[Outfit] text-3xl font-bold"
+                style={{ color: stat.highlight ? "#E87B2C" : "white", letterSpacing: "-0.02em" }}
               >
                 {stat.value}
               </p>
@@ -137,43 +164,56 @@ export default async function AdminDashboardPage() {
         </div>
 
         {/* Two-column tables */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-5 lg:grid-cols-2">
           {/* Recent signups */}
-          <div className="rounded-xl border border-[#222222] bg-[#111111]">
-            <div className="border-b border-[#222222] px-5 py-4">
-              <h2 className="font-semibold text-white">Recent Signups</h2>
-              <p className="mt-0.5 text-xs text-gray-500">
+          <div
+            className="overflow-hidden rounded-2xl"
+            style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.07)" }}
+          >
+            <div
+              className="px-5 py-4"
+              style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+            >
+              <h2 className="font-semibold text-white font-[Outfit]">Recent Signups</h2>
+              <p className="mt-0.5 text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
                 Latest user registrations
               </p>
             </div>
             {recentSignups && recentSignups.length > 0 ? (
-              <ul className="divide-y divide-[#1a1a1a]">
-                {recentSignups.map((u) => (
+              <ul>
+                {recentSignups.map((u, i) => (
                   <li
                     key={u.id}
-                    className="flex items-center justify-between gap-4 px-5 py-3"
+                    className="flex items-center justify-between gap-4 px-5 py-3 transition-colors hover:bg-white/[0.02]"
+                    style={{ borderTop: i > 0 ? "1px solid rgba(255,255,255,0.05)" : undefined }}
                   >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-white">
                         {u.full_name || "—"}
                       </p>
-                      <p className="truncate text-xs text-gray-500">{u.email}</p>
+                      <p className="truncate text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
+                        {u.email}
+                      </p>
                     </div>
-                    <span className="shrink-0 text-xs text-gray-500">
+                    <span className="shrink-0 text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
                       {timeAgo(u.created_at)}
                     </span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="px-5 py-8 text-center text-sm text-gray-500">
+              <p className="px-5 py-8 text-center text-sm" style={{ color: "rgba(255,255,255,0.35)" }}>
                 No users yet.
               </p>
             )}
-            <div className="border-t border-[#222222] px-5 py-3">
+            <div
+              className="px-5 py-3"
+              style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+            >
               <a
                 href="/admin/users"
-                className="text-xs font-medium text-[#f97316] hover:underline"
+                className="text-xs font-medium transition-colors hover:underline"
+                style={{ color: "#E87B2C" }}
               >
                 View all users →
               </a>
@@ -181,19 +221,26 @@ export default async function AdminDashboardPage() {
           </div>
 
           {/* Recent calls */}
-          <div className="rounded-xl border border-[#222222] bg-[#111111]">
-            <div className="border-b border-[#222222] px-5 py-4">
-              <h2 className="font-semibold text-white">Recent Calls</h2>
-              <p className="mt-0.5 text-xs text-gray-500">
+          <div
+            className="overflow-hidden rounded-2xl"
+            style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.07)" }}
+          >
+            <div
+              className="px-5 py-4"
+              style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+            >
+              <h2 className="font-semibold text-white font-[Outfit]">Recent Calls</h2>
+              <p className="mt-0.5 text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
                 Latest Voice Agent activity
               </p>
             </div>
             {recentCalls && recentCalls.length > 0 ? (
-              <ul className="divide-y divide-[#1a1a1a]">
-                {recentCalls.map((call) => (
+              <ul>
+                {recentCalls.map((call, i) => (
                   <li
                     key={call.id}
-                    className="flex items-center justify-between gap-4 px-5 py-3"
+                    className="flex items-center justify-between gap-4 px-5 py-3 transition-colors hover:bg-white/[0.02]"
+                    style={{ borderTop: i > 0 ? "1px solid rgba(255,255,255,0.05)" : undefined }}
                   >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-white">
@@ -203,7 +250,7 @@ export default async function AdminDashboardPage() {
                         className={[
                           "mt-0.5 inline-block rounded-full px-2 py-0.5 text-xs font-medium",
                           call.status === "ended"
-                            ? "bg-green-500/10 text-green-400"
+                            ? "bg-emerald-500/10 text-emerald-400"
                             : "bg-yellow-500/10 text-yellow-400",
                         ].join(" ")}
                       >
@@ -211,10 +258,10 @@ export default async function AdminDashboardPage() {
                       </span>
                     </div>
                     <div className="shrink-0 text-right">
-                      <p className="text-sm tabular-nums text-gray-300">
+                      <p className="text-sm tabular-nums" style={{ color: "rgba(255,255,255,0.7)" }}>
                         {formatDuration(call.duration)}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
                         {timeAgo(call.created_at)}
                       </p>
                     </div>
@@ -222,7 +269,7 @@ export default async function AdminDashboardPage() {
                 ))}
               </ul>
             ) : (
-              <p className="px-5 py-8 text-center text-sm text-gray-500">
+              <p className="px-5 py-8 text-center text-sm" style={{ color: "rgba(255,255,255,0.35)" }}>
                 No calls yet.
               </p>
             )}
@@ -231,25 +278,27 @@ export default async function AdminDashboardPage() {
 
         {/* Subscription breakdown */}
         {subscriptions && subscriptions.length > 0 && (
-          <div className="rounded-xl border border-[#222222] bg-[#111111] p-5">
-            <h2 className="mb-4 font-semibold text-white">
+          <div
+            className="rounded-2xl p-5"
+            style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.07)" }}
+          >
+            <h2 className="mb-4 font-semibold text-white font-[Outfit]">
               Subscription Breakdown
             </h2>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-3">
               {(["starter", "growth", "pro"] as const).map((plan) => {
-                const count = subscriptions.filter(
-                  (s) => s.plan === plan,
-                ).length;
+                const count = subscriptions.filter((s) => s.plan === plan).length;
                 return (
                   <div
                     key={plan}
-                    className="flex-1 rounded-lg border border-[#222222] bg-black/40 px-4 py-3 text-center"
+                    className="flex-1 rounded-xl px-4 py-3 text-center"
+                    style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
                   >
-                    <p className="capitalize text-sm text-gray-400">{plan}</p>
-                    <p className="mt-1 text-2xl font-bold text-white">
-                      {count}
+                    <p className="capitalize text-xs font-medium font-[Outfit]" style={{ color: "rgba(255,255,255,0.4)" }}>
+                      {plan}
                     </p>
-                    <p className="text-xs text-gray-600">
+                    <p className="mt-1.5 text-2xl font-bold text-white font-[Outfit]">{count}</p>
+                    <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
                       ${PLAN_MRR[plan]}/mo each
                     </p>
                   </div>

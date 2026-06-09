@@ -30,26 +30,30 @@ export function WelcomeBanner() {
 
   return (
     <div
-      className="group relative overflow-hidden rounded-xl p-6 transition-all duration-300"
+      className="group relative overflow-hidden rounded-2xl px-6 py-5 transition-all duration-300"
       style={{
-        background: "linear-gradient(135deg, #1e1e1e 0%, #1f1508 50%, #1e1e1e 100%)",
-        border: "1px solid rgba(232, 123, 44, 0.2)",
+        background: "linear-gradient(135deg, #181410 0%, #1a1200 40%, #161614 100%)",
+        border: "1px solid rgba(232, 123, 44, 0.18)",
       }}
     >
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-60"
-        style={{ background: "linear-gradient(90deg, #E87B2C, #f59e0b, transparent)" }}
+        className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-70"
+        style={{ background: "linear-gradient(90deg, transparent, #E87B2C 30%, #f59e0b 60%, transparent)" }}
       />
       <div
-        className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full opacity-[0.08]"
-        style={{ background: "radial-gradient(circle, rgba(232,123,44,0.8) 0%, transparent 70%)" }}
+        className="pointer-events-none absolute -top-12 -right-12 h-48 w-48 rounded-full opacity-[0.07]"
+        style={{ background: "radial-gradient(circle, #E87B2C 0%, transparent 70%)" }}
+      />
+      <div
+        className="pointer-events-none absolute bottom-0 left-0 h-24 w-48 opacity-[0.04]"
+        style={{ background: "radial-gradient(circle, #f59e0b 0%, transparent 70%)" }}
       />
       <div className="relative flex items-center gap-4">
         <div
-          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white transition-all duration-300 hover:scale-105"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-base font-bold text-white"
           style={{
             background: "linear-gradient(135deg, #E87B2C 0%, #f59e0b 100%)",
-            boxShadow: "0 0 20px rgba(232, 123, 44, 0.35)",
+            boxShadow: "0 0 24px rgba(232, 123, 44, 0.3)",
             fontFamily: "Outfit, sans-serif",
           }}
           aria-hidden
@@ -57,11 +61,14 @@ export function WelcomeBanner() {
           {initials}
         </div>
         <div>
-          <h2 className="font-[Outfit] text-xl font-bold text-white sm:text-2xl">
-            Welcome back, {firstName}!
+          <h2
+            className="font-[Outfit] text-lg font-bold text-white sm:text-xl"
+            style={{ letterSpacing: "-0.02em" }}
+          >
+            Welcome back, {firstName}
           </h2>
-          <p className="mt-1 text-sm text-[#AAAAAA]">
-            @{profile.username} · Here&apos;s what your AI agents have been up to
+          <p className="mt-0.5 text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
+            @{profile.username} · Your AI agents are ready
           </p>
         </div>
       </div>

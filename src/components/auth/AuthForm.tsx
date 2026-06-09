@@ -45,6 +45,8 @@ export function AuthForm({ mode }: AuthFormProps) {
     useState<Partial<Record<FieldKey, boolean>>>(INITIAL_TOUCHED);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsTouched, setTermsTouched] = useState(false);
 
   const markTouched = useCallback((field: FieldKey) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
@@ -61,6 +63,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         password: true,
         confirmPassword: true,
       });
+      setTermsTouched(true);
     }
   }, [isLogin]);
 
@@ -110,7 +113,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         email,
         password,
         confirmPassword
-      );
+      ) && termsAccepted;
 
   async function waitForSession(
     maxAttempts = 15,
@@ -646,6 +649,111 @@ export function AuthForm({ mode }: AuthFormProps) {
                 autoComplete="new-password"
                 disabled={loading}
               />
+            )}
+
+            {/* Legal consent checkbox — signup only */}
+            {!isLogin && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", cursor: loading ? "not-allowed" : "pointer" }}>
+                  <div style={{ position: "relative", flexShrink: 0, marginTop: "2px" }}>
+                    <input
+                      type="checkbox"
+                      checked={termsAccepted}
+                      onChange={(e) => {
+                        setTermsAccepted(e.target.checked);
+                        setTermsTouched(true);
+                      }}
+                      disabled={loading}
+                      style={{
+                        appearance: "none",
+                        WebkitAppearance: "none",
+                        width: "17px",
+                        height: "17px",
+                        border: termsTouched && !termsAccepted
+                          ? "1.5px solid rgba(239,68,68,0.6)"
+                          : termsAccepted
+                            ? "1.5px solid #E87B2C"
+                            : "1.5px solid rgba(255,255,255,0.15)",
+                        borderRadius: "4px",
+                        background: termsAccepted
+                          ? "rgba(232,123,44,0.15)"
+                          : "rgba(255,255,255,0.04)",
+                        cursor: loading ? "not-allowed" : "pointer",
+                        transition: "all 0.2s",
+                        display: "block",
+                      }}
+                    />
+                    {termsAccepted && (
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#E87B2C"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        style={{
+                          position: "absolute",
+                          top: "2px",
+                          left: "2px",
+                          width: "13px",
+                          height: "13px",
+                          pointerEvents: "none",
+                        }}
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </div>
+                  <span style={{ fontSize: "13px", color: "#888888", lineHeight: 1.55 }}>
+                    I agree to the{" "}
+                    <a
+                      href="/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ color: "#E87B2C", textDecoration: "underline" }}
+                    >
+                      Terms of Service
+                    </a>
+                    {", "}
+                    <a
+                      href="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ color: "#E87B2C", textDecoration: "underline" }}
+                    >
+                      Privacy Policy
+                    </a>
+                    {", and "}
+                    <a
+                      href="/acceptable-use"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ color: "#E87B2C", textDecoration: "underline" }}
+                    >
+                      Acceptable Use Policy
+                    </a>
+                  </span>
+                </label>
+
+                {termsTouched && !termsAccepted && (
+                  <p style={{ marginTop: "6px", paddingLeft: "27px", fontSize: "12px", color: "#f87171" }}>
+                    You must agree to the terms to continue
+                  </p>
+                )}
+
+                <p style={{
+                  marginTop: "8px",
+                  paddingLeft: "27px",
+                  fontSize: "11px",
+                  color: "#555555",
+                  lineHeight: 1.55,
+                }}>
+                  By signing up, you acknowledge that CodeFounder deploys AI-powered voice agents that interact with real callers.
+                </p>
+              </div>
             )}
 
             {error && (
