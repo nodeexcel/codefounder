@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { DashboardNavbar } from "@/components/dashboard/Navbar";
+import { formatDuration } from "@/lib/format";
 
 const PAGE_SIZE = 10;
 
@@ -14,12 +15,6 @@ interface CallLog {
   transcript: string | null;
   recording_url: string | null;
   created_at: string;
-}
-
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 function formatDateTime(dateStr: string): string {
@@ -301,7 +296,6 @@ export default function CallsPage() {
                           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#888]">
                             Recording
                           </p>
-                          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                           <audio
                             controls
                             src={call.recording_url}

@@ -10,6 +10,16 @@ interface BookingRequest {
 }
 
 export async function POST(req: Request) {
+  // When CALENDAR_WEBHOOK_SECRET is set, require the x-vapi-secret header to match.
+  // Backward-compatible: if the env var is absent, the check is skipped.
+  const expectedSecret = process.env.CALENDAR_WEBHOOK_SECRET;
+  if (expectedSecret) {
+    const provided = req.headers.get("x-vapi-secret");
+    if (provided !== expectedSecret) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
   try {
     const body = (await req.json()) as BookingRequest;
     const { callerName, callerPhone, startTime, endTime, reason } = body;

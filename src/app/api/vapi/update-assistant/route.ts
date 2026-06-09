@@ -9,10 +9,6 @@ import type { WizardFormData } from "@/lib/types/wizard";
 // existing one if they already have vapi_assistant_id stored in the DB.
 // Returns { success: true, assistantId: string }
 export async function POST(request: Request) {
-  if (process.env.NODE_ENV === "development") {
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-  }
-
   const apiKey = process.env.VAPI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
@@ -57,12 +53,26 @@ export async function POST(request: Request) {
     .eq("agent_type", body.wizardData.agentType ?? "voice")
     .maybeSingle();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const existingAssistantId = (session as any)?.vapi_assistant_id as string | null | undefined;
-  const sessionVoice = (session as any)?.voice_settings as Record<string, unknown> | null;
+  const sessionRow = session as {
+    vapi_assistant_id?: string | null;
+    voice_settings?: Record<string, unknown> | null;
+  } | null;
+  const existingAssistantId = sessionRow?.vapi_assistant_id ?? null;
+  const sessionVoice = sessionRow?.voice_settings ?? null;
 
   const systemPrompt = buildVapiSystemPrompt(body.wizardData);
   const agentName = body.wizardData.voice.agentName.trim();
+
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+  const calendarToolServer: Record<string, unknown> = {
+    url: `${siteUrl}/api/calendar/book`,
+    timeoutSeconds: 20,
+  };
+  // When CALENDAR_WEBHOOK_SECRET is configured, Vapi will send it as the
+  // x-vapi-secret header so the calendar endpoint can verify the request.
+  if (process.env.CALENDAR_WEBHOOK_SECRET) {
+    calendarToolServer.secret = process.env.CALENDAR_WEBHOOK_SECRET;
+  }
 
   const appointmentBookingTool = {
     type: "function",
@@ -81,10 +91,7 @@ export async function POST(request: Request) {
         },
       },
     },
-    server: {
-      url: "https://conversiq.vercel.app/api/calendar/book",
-      timeoutSeconds: 20,
-    },
+    server: calendarToolServer,
   };
 
   const forwardTo = body.wizardData.voice.forwardTo?.trim();

@@ -54,20 +54,7 @@ export async function middleware(request: NextRequest) {
   const isAuthPage = pathname === "/login" || pathname === "/signup";
 
   const projectRef = getProjectRefFromUrl(supabaseUrl);
-  const expectedCookie = `sb-${projectRef}-auth-token`;
-
-  // Debug: log all cookie names Supabase / app sets on this request
-  const allCookies = request.cookies.getAll();
-  console.log(
-    "[middleware]",
-    pathname,
-    "cookie names:",
-    allCookies.map((c) => c.name)
-  );
-  console.log("[middleware] expected Supabase auth cookie:", expectedCookie);
-
   const hasAuthCookie = hasSupabaseAuthCookie(request, projectRef);
-  console.log("[middleware] auth cookie present:", hasAuthCookie);
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error(
@@ -114,7 +101,6 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isAuthenticated = !!user || hasAuthCookie;
-  console.log("[middleware] getUser:", !!user, "isAuthenticated:", isAuthenticated);
 
   if (!isAuthenticated && isProtected) {
     const url = request.nextUrl.clone();
@@ -123,15 +109,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Admin pages: authenticated but not the admin email → back to dashboard
-  if (isAuthenticated && isAdminPage) {
-    const adminEmail = process.env.ADMIN_EMAIL;
-    if (!adminEmail || user?.email !== adminEmail) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
-    }
-  }
+  // Admin authorization (role + email) is enforced in src/app/admin/layout.tsx.
+  // The middleware only ensures the user is authenticated before reaching admin routes.
 
   if (isAuthenticated && isAuthPage) {
     const url = request.nextUrl.clone();

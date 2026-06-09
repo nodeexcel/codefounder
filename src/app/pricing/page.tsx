@@ -80,6 +80,8 @@ export default function PricingPage() {
         throw new Error("Checkout URL missing");
       }
 
+      // Event handler (not render): navigating to Stripe Checkout URL
+      // eslint-disable-next-line react-hooks/immutability
       window.location.href = data.url;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Checkout failed");

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { sendEmail } from "@/lib/email/resend";
 import { newCallHtml } from "@/lib/email/templates/new-call";
 import {
@@ -73,6 +73,18 @@ interface VapiWebhookPayload extends VapiEventData {
 const CALL_END_EVENTS = new Set(["end-of-call-report", "call-ended", "hang"]);
 
 export async function POST(request: Request) {
+  // When VAPI_WEBHOOK_SECRET is configured, require matching x-vapi-secret header.
+  // Backward-compatible: if the env var is not set, the check is skipped so
+  // existing deployments without the secret continue to work.
+  const webhookSecret = process.env.VAPI_WEBHOOK_SECRET;
+  if (webhookSecret) {
+    const provided = request.headers.get("x-vapi-secret");
+    if (provided !== webhookSecret) {
+      console.warn("[vapi/webhook] signature mismatch — rejecting request");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -152,8 +164,7 @@ export async function POST(request: Request) {
       .eq("vapi_assistant_id", agentId)
       .maybeSingle();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    userId = (byAssistant as any)?.user_id ?? null;
+    userId = (byAssistant as { user_id: string } | null)?.user_id ?? null;
 
     if (userId) {
       console.log("[vapi/webhook] resolved user_id by vapi_assistant_id:", agentId, "→", userId);
@@ -166,13 +177,20 @@ export async function POST(request: Request) {
         .eq("status", "live")
         .limit(1)
         .maybeSingle();
-      userId = anyLive?.user_id ?? null;
+      userId = (anyLive as { user_id: string } | null)?.user_id ?? null;
       if (userId) {
         console.log("[vapi/webhook] resolved user_id from live session (legacy fallback):", userId);
       } else {
         console.warn("[vapi/webhook] could not resolve user_id for assistant:", agentId);
       }
     }
+  }
+
+  // Do not write records with null user_id: the RLS policy requires user_id = auth.uid(),
+  // so unattributed records would be invisible anyway and storing them serves no purpose.
+  if (!userId) {
+    console.warn("[vapi/webhook] dropping call", call.id, "— user_id could not be resolved");
+    return NextResponse.json({ received: true });
   }
 
   let duration: number | null = null;
@@ -238,8 +256,7 @@ async function sendCallNotifications({
   durationSeconds,
   transcript,
 }: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  adminSupabase: ReturnType<typeof createClient<any>>;
+  adminSupabase: SupabaseClient;
   userId: string;
   callerName: string | null;
   callerPhone: string | null;
@@ -253,14 +270,13 @@ async function sendCallNotifications({
     .eq("id", userId)
     .maybeSingle();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const ownerEmail = (profile as any)?.email as string | undefined;
+  const ownerEmail = (profile as { email?: string } | null)?.email;
   if (!ownerEmail) {
     console.warn("[vapi/webhook] no email for user_id:", userId);
     return;
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
   const callsUrl = `${siteUrl}/calls`;
 
   // New call notification — always send for end-of-call-report

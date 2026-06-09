@@ -1,26 +1,9 @@
 import { DashboardNavbar } from "@/components/dashboard/Navbar";
 import { WelcomeBanner } from "@/components/dashboard/WelcomeBanner";
-import { CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { AGENTS, type AgentType } from "@/lib/agents";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins} min ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs} hr${hrs === 1 ? "" : "s"} ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days} day${days === 1 ? "" : "s"} ago`;
-}
+import { formatDuration, timeAgo } from "@/lib/format";
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -136,12 +119,15 @@ export default async function DashboardPage() {
     ? subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)
     : "Free";
 
+  // Server Component: Date.now() is correct at request time (not in a hook/render cycle)
+  // eslint-disable-next-line react-hooks/purity
+  const nowMs = Date.now();
   const trialDaysRemaining = subscription?.created_at
     ? Math.max(
         0,
         14 -
           Math.floor(
-            (Date.now() - new Date(subscription.created_at).getTime()) /
+            (nowMs - new Date(subscription.created_at).getTime()) /
               (1000 * 60 * 60 * 24),
           ),
       )

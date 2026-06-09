@@ -1,33 +1,13 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { PLAN_CONFIG, isPlanKey } from "@/lib/plans";
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
 const stripe = stripeSecretKey
   ? new Stripe(stripeSecretKey, { apiVersion: "2026-05-27.dahlia" })
   : null;
-
-const PLAN_CONFIG = {
-  starter: {
-    name: "CodeFounder Starter",
-    amount: 2900,
-  },
-  growth: {
-    name: "CodeFounder Growth",
-    amount: 7900,
-  },
-  pro: {
-    name: "CodeFounder Pro",
-    amount: 19900,
-  },
-} as const;
-
-type PlanKey = keyof typeof PLAN_CONFIG;
-
-function isPlanKey(value: string): value is PlanKey {
-  return value in PLAN_CONFIG;
-}
 
 export async function POST(request: Request) {
   if (!stripe) {
@@ -73,7 +53,7 @@ export async function POST(request: Request) {
           quantity: 1,
           price_data: {
             currency: "usd",
-            unit_amount: plan.amount,
+            unit_amount: plan.amountCents,
             recurring: { interval: "month" },
             product_data: {
               name: plan.name,

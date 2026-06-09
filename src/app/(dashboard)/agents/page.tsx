@@ -3,19 +3,9 @@ import { Button } from "@/components/ui/Button";
 import { AGENTS, type AgentType } from "@/lib/agents";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { BusinessDetails, VoiceSettings } from "@/lib/types/wizard";
+import { timeAgo } from "@/lib/format";
 
 const AVAILABLE: Set<AgentType> = new Set(["voice"]);
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
-}
 
 export default async function AgentsPage() {
   const supabase = await createServerSupabaseClient();

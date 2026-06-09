@@ -16,6 +16,11 @@ function formatDate(dateStr: string): string {
   });
 }
 
+// Allow only safe characters in the search term to prevent filter injection
+function sanitizeSearch(raw: string): string {
+  return raw.replace(/[^a-zA-Z0-9 @._-]/g, "").slice(0, 100);
+}
+
 export default async function AdminUsersPage({
   searchParams,
 }: {
@@ -23,6 +28,7 @@ export default async function AdminUsersPage({
 }) {
   const { q = "" } = await searchParams;
   const db = adminSupabase();
+  const safeQ = sanitizeSearch(q);
 
   // Fetch profiles (with optional search)
   let profilesQuery = db
@@ -31,9 +37,9 @@ export default async function AdminUsersPage({
     .order("created_at", { ascending: false })
     .limit(100);
 
-  if (q.trim()) {
+  if (safeQ.trim()) {
     profilesQuery = profilesQuery.or(
-      `full_name.ilike.%${q.trim()}%,email.ilike.%${q.trim()}%,username.ilike.%${q.trim()}%`,
+      `full_name.ilike.%${safeQ.trim()}%,email.ilike.%${safeQ.trim()}%,username.ilike.%${safeQ.trim()}%`,
     );
   }
 
@@ -73,7 +79,7 @@ export default async function AdminUsersPage({
           </h1>
           <p className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
             {users.length} user{users.length !== 1 ? "s" : ""}
-            {q ? ` matching "${q}"` : ""}
+            {safeQ ? ` matching "${safeQ}"` : ""}
           </p>
         </div>
         <span
@@ -110,7 +116,7 @@ export default async function AdminUsersPage({
             >
               Search
             </button>
-            {q && (
+            {safeQ && (
               <a
                 href="/admin/users"
                 className="flex items-center rounded-lg px-4 py-2.5 text-sm transition-colors font-[Outfit]"
@@ -132,9 +138,9 @@ export default async function AdminUsersPage({
             style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.07)" }}
           >
             <p className="text-lg font-medium text-white font-[Outfit]">No users found</p>
-            {q && (
+            {safeQ && (
               <p className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
-                No results for &ldquo;{q}&rdquo;. Try a different search.
+                No results for &ldquo;{safeQ}&rdquo;. Try a different search.
               </p>
             )}
           </div>
