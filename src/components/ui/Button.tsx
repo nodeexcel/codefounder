@@ -14,12 +14,12 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-[#f97316] text-white hover:bg-[#ea580c] shadow-lg shadow-orange-500/20",
+    "relative overflow-hidden bg-[#E87B2C] text-white hover:bg-[#C4611A] shadow-lg shadow-[#E87B2C]/25 hover:shadow-[#E87B2C]/40 hover:shadow-xl before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/[0.12] before:to-transparent before:-translate-x-full hover:before:translate-x-full before:transition-transform before:duration-500",
   secondary:
-    "bg-[#111111] text-white border border-[#222222] hover:border-[#f97316] hover:text-[#f97316]",
-  ghost: "bg-transparent text-gray-300 hover:text-white hover:bg-white/5",
+    "bg-[#1e1e1e] text-white hover:text-[#E87B2C] hover:border-[#E87B2C]/50",
+  ghost: "bg-transparent text-[#AAAAAA] hover:text-white hover:bg-white/5",
   outline:
-    "bg-transparent border border-[#222222] text-gray-200 hover:border-[#f97316] hover:text-[#f97316]",
+    "bg-transparent text-[#AAAAAA] hover:text-[#E87B2C] hover:border-[#E87B2C]/50 hover:shadow-md hover:shadow-[#E87B2C]/10",
 };
 
 const sizes: Record<Size, string> = {
@@ -38,10 +38,13 @@ export function Button({
   disabled,
   ...props
 }: ButtonProps) {
+  const hasBorder = variant === "secondary" || variant === "outline";
+
   const classes = [
-    "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200",
-    "focus:outline-none focus:ring-2 focus:ring-[#f97316]/50 focus:ring-offset-2 focus:ring-offset-black",
+    "inline-flex items-center justify-center gap-2 rounded-lg font-[Outfit] font-medium transition-all duration-200",
+    "focus:outline-none focus:ring-2 focus:ring-[#E87B2C]/50 focus:ring-offset-2 focus:ring-offset-[#141414]",
     "disabled:opacity-50 disabled:cursor-not-allowed",
+    hasBorder ? "border border-white/[0.08]" : "",
     variants[variant],
     sizes[size],
     fullWidth ? "w-full" : "",

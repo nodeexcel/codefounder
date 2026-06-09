@@ -1,7 +1,11 @@
+export const dynamic = "force-dynamic";
+
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { sendEmail } from "@/lib/email/resend";
+import { welcomeHtml } from "@/lib/email/templates/welcome";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -80,6 +84,21 @@ export async function GET(request: Request) {
               full_name: fullName,
               email,
             });
+          }
+
+          // Welcome email for newly created profiles (don't block redirect on failure)
+          if (email) {
+            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? origin;
+            sendEmail(
+              email,
+              "Welcome to CodeFounder!",
+              welcomeHtml({
+                name: fullName || baseUsername,
+                dashboardUrl: `${siteUrl}/dashboard`,
+              }),
+            ).catch((err) =>
+              console.error("[auth/callback] welcome email failed:", err),
+            );
           }
         }
       }

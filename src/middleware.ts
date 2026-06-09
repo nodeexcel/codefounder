@@ -3,6 +3,9 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const protectedPrefixes = ["/dashboard", "/agents", "/wizard"];
 
+// These pages must never redirect — users need them while unauthenticated
+const publicAuthPages = new Set(["/forgot-password", "/reset-password"]);
+
 // Resolved at build time via next.config.ts `env` + .env / .env.local
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -37,9 +40,17 @@ function hasSupabaseAuthCookie(
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const isProtected = protectedPrefixes.some(
-    (p) => pathname === p || pathname.startsWith(`${p}/`)
-  );
+
+  // Password reset pages: always pass through, no redirects
+  if (publicAuthPages.has(pathname)) {
+    return NextResponse.next({ request });
+  }
+
+  const isAdminPage =
+    pathname === "/admin" || pathname.startsWith("/admin/");
+  const isProtected =
+    isAdminPage ||
+    protectedPrefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   const isAuthPage = pathname === "/login" || pathname === "/signup";
 
   const projectRef = getProjectRefFromUrl(supabaseUrl);
@@ -112,6 +123,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Admin pages: authenticated but not the admin email → back to dashboard
+  if (isAuthenticated && isAdminPage) {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!adminEmail || user?.email !== adminEmail) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
+  }
+
   if (isAuthenticated && isAuthPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
@@ -126,7 +147,12 @@ export const config = {
     "/dashboard/:path*",
     "/agents/:path*",
     "/wizard/:path*",
+    "/calls/:path*",
+    "/admin/:path*",
+    "/admin",
     "/login",
     "/signup",
+    "/forgot-password",
+    "/reset-password",
   ],
 };

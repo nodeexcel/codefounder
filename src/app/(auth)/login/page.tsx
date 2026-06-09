@@ -1,5 +1,7 @@
 import { AuthForm } from "@/components/auth/AuthForm";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Sign In | CodeFounder",
 };

@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { sendEmail } from "@/lib/email/resend";
+import { newCallHtml } from "@/lib/email/templates/new-call";
+import {
+  appointmentHtml,
+  detectsAppointment,
+  extractAppointmentDetails,
+} from "@/lib/email/templates/appointment";
 
 interface VapiCall {
   id: string;
@@ -131,22 +138,40 @@ export async function POST(request: Request) {
     auth: { persistSession: false },
   });
 
-  // Resolve user_id: explicit metadata wins; fall back to whichever user has a live voice agent.
-  // Once per-user assistant IDs are stored in voice_settings, filter by assistant_id here.
+  // Resolve user_id with a three-tier fallback:
+  // 1. Explicit user_id in Vapi call metadata (manual override)
+  // 2. Match vapi_assistant_id in agent_wizard_sessions (correct per-user lookup)
+  // 3. Any live voice session (legacy fallback for calls before migration 006)
   let userId: string | null = call.metadata?.user_id ?? null;
+
   if (!userId && agentId) {
-    const { data: session } = await adminSupabase
+    // Tier 2: per-user assistant ID match
+    const { data: byAssistant } = await adminSupabase
       .from("agent_wizard_sessions")
       .select("user_id")
-      .eq("agent_type", "voice")
-      .eq("status", "live")
-      .limit(1)
+      .eq("vapi_assistant_id", agentId)
       .maybeSingle();
-    userId = session?.user_id ?? null;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    userId = (byAssistant as any)?.user_id ?? null;
+
     if (userId) {
-      console.log("[vapi/webhook] resolved user_id from live session:", userId);
+      console.log("[vapi/webhook] resolved user_id by vapi_assistant_id:", agentId, "→", userId);
     } else {
-      console.warn("[vapi/webhook] could not resolve user_id for assistant:", agentId);
+      // Tier 3: legacy — find any live voice session (single-user only, pre-migration)
+      const { data: anyLive } = await adminSupabase
+        .from("agent_wizard_sessions")
+        .select("user_id")
+        .eq("agent_type", "voice")
+        .eq("status", "live")
+        .limit(1)
+        .maybeSingle();
+      userId = anyLive?.user_id ?? null;
+      if (userId) {
+        console.log("[vapi/webhook] resolved user_id from live session (legacy fallback):", userId);
+      } else {
+        console.warn("[vapi/webhook] could not resolve user_id for assistant:", agentId);
+      }
     }
   }
 
@@ -188,5 +213,81 @@ export async function POST(request: Request) {
   }
 
   console.log("[vapi/webhook] successfully saved call_id:", call.id);
+
+  // Send email notifications only for end-of-call-report (full data) with a known owner
+  if (eventType === "end-of-call-report" && userId) {
+    // Fire email notifications without blocking the webhook response
+    sendCallNotifications({
+      adminSupabase,
+      userId,
+      callerName: callerNumber,
+      callerPhone: call.customer?.number ?? null,
+      durationSeconds: duration,
+      transcript,
+    }).catch((err) => console.error("[vapi/webhook] notification error:", err));
+  }
+
   return NextResponse.json({ received: true });
+}
+
+async function sendCallNotifications({
+  adminSupabase,
+  userId,
+  callerName,
+  callerPhone,
+  durationSeconds,
+  transcript,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  adminSupabase: ReturnType<typeof createClient<any>>;
+  userId: string;
+  callerName: string | null;
+  callerPhone: string | null;
+  durationSeconds: number | null;
+  transcript: string | null;
+}) {
+  // Look up the business owner's email
+  const { data: profile } = await adminSupabase
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", userId)
+    .maybeSingle();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ownerEmail = (profile as any)?.email as string | undefined;
+  if (!ownerEmail) {
+    console.warn("[vapi/webhook] no email for user_id:", userId);
+    return;
+  }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const callsUrl = `${siteUrl}/calls`;
+
+  // New call notification — always send for end-of-call-report
+  await sendEmail(
+    ownerEmail,
+    "New call received — CodeFounder",
+    newCallHtml({
+      callerName,
+      callerPhone,
+      durationSeconds,
+      transcriptPreview: transcript,
+      callsUrl,
+    }),
+  );
+
+  // Appointment notification — send when transcript suggests a booking was made
+  if (detectsAppointment(transcript)) {
+    const appointmentDetails = extractAppointmentDetails(transcript ?? "");
+    await sendEmail(
+      ownerEmail,
+      "New appointment booked! — CodeFounder",
+      appointmentHtml({
+        callerName,
+        callerPhone,
+        appointmentDetails,
+        callsUrl,
+      }),
+    );
+  }
 }

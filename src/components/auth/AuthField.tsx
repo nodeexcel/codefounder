@@ -29,22 +29,36 @@ export function AuthField({
   const isPassword = type === "password" || showPasswordToggle;
   const inputType = isPassword && showPassword ? "text" : type;
 
-  const borderClass =
+  const borderColor =
     touched && error
-      ? "border-red-500 focus:border-red-500 focus:ring-red-500/40"
+      ? "rgba(239,68,68,0.5)"
       : touched && valid
-        ? "border-green-500/70 focus:border-green-500 focus:ring-green-500/30"
-        : "border-[#222222] focus:border-[#f97316] focus:ring-[#f97316]/40";
+        ? "rgba(34,197,94,0.45)"
+        : "rgba(255,255,255,0.08)";
+
+  const focusShadow =
+    touched && error
+      ? "0 0 0 3px rgba(239,68,68,0.12)"
+      : touched && valid
+        ? "0 0 0 3px rgba(34,197,94,0.1)"
+        : "0 0 0 3px rgba(232,123,44,0.14)";
 
   return (
-    <div className="w-full">
+    <div style={{ width: "100%" }}>
       <label
         htmlFor={inputId}
-        className="mb-1.5 block text-sm font-medium text-gray-300"
+        style={{
+          display: "block",
+          marginBottom: "6px",
+          fontSize: "13px",
+          fontWeight: 500,
+          color: "#aaaaaa",
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
+        }}
       >
         {label}
       </label>
-      <div className="relative">
+      <div style={{ position: "relative" }}>
         <input
           id={inputId}
           type={inputType}
@@ -52,12 +66,32 @@ export function AuthField({
           aria-describedby={
             error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined
           }
-          className={[
-            "w-full rounded-lg border bg-[#111111] py-2.5 text-white placeholder:text-gray-500",
-            "transition-colors duration-200 focus:outline-none focus:ring-1",
-            showPasswordToggle ? "pl-4 pr-11" : "px-4",
-            borderClass,
-          ].join(" ")}
+          style={{
+            width: "100%",
+            background: "#141414",
+            border: `1px solid ${borderColor}`,
+            borderRadius: "10px",
+            color: "#ffffff",
+            padding: showPasswordToggle ? "12px 44px 12px 16px" : "12px 16px",
+            fontSize: "14px",
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            outline: "none",
+            transition: "border-color 0.2s, box-shadow 0.2s",
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = touched && error
+              ? "rgba(239,68,68,0.6)"
+              : touched && valid
+                ? "rgba(34,197,94,0.55)"
+                : "rgba(232,123,44,0.6)";
+            e.currentTarget.style.boxShadow = focusShadow;
+            props.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = borderColor;
+            e.currentTarget.style.boxShadow = "none";
+            props.onBlur?.(e);
+          }}
           {...props}
         />
         {showPasswordToggle && (
@@ -65,7 +99,22 @@ export function AuthField({
             type="button"
             tabIndex={-1}
             onClick={() => setShowPassword((v) => !v)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 transition-colors hover:text-gray-300"
+            style={{
+              position: "absolute",
+              right: "12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "#666",
+              padding: "2px",
+              display: "flex",
+              alignItems: "center",
+              transition: "color 0.2s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "#aaa"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "#666"; }}
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
             {showPassword ? <EyeOffIcon /> : <EyeIcon />}
@@ -73,12 +122,18 @@ export function AuthField({
         )}
       </div>
       {touched && error && (
-        <p id={`${inputId}-error`} className="mt-1.5 text-sm text-red-400">
+        <p
+          id={`${inputId}-error`}
+          style={{ marginTop: "6px", fontSize: "12px", color: "#f87171", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+        >
           {error}
         </p>
       )}
       {hint && !error && (
-        <p id={`${inputId}-hint`} className="mt-1.5 text-sm text-gray-500">
+        <p
+          id={`${inputId}-hint`}
+          style={{ marginTop: "6px", fontSize: "12px", color: "#555", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+        >
           {hint}
         </p>
       )}
@@ -89,7 +144,8 @@ export function AuthField({
 function EyeIcon() {
   return (
     <svg
-      className="h-5 w-5"
+      width="18"
+      height="18"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -113,7 +169,8 @@ function EyeIcon() {
 function EyeOffIcon() {
   return (
     <svg
-      className="h-5 w-5"
+      width="18"
+      height="18"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"

@@ -2,9 +2,11 @@ import type { AgentType } from "@/lib/agents";
 
 export const WIZARD_STEPS = [
   "Choose Agent",
-  "Business Details",
-  "Voice Agent Settings",
-  "Review & Go Live",
+  "Business Profile",
+  "Configure Agent",
+  "Connect Calendar",
+  "Phone Number",
+  "Test & Launch",
 ] as const;
 
 export const BUSINESS_CATEGORIES = [
@@ -43,6 +45,22 @@ export const DAY_LABELS: Record<DayKey, string> = {
   sunday: "Sunday",
 };
 
+export const TIMEZONES = [
+  { value: "Asia/Kolkata",        label: "India — IST (UTC+5:30)" },
+  { value: "America/New_York",    label: "Eastern — EST/EDT" },
+  { value: "America/Chicago",     label: "Central — CST/CDT" },
+  { value: "America/Denver",      label: "Mountain — MST/MDT" },
+  { value: "America/Los_Angeles", label: "Pacific — PST/PDT" },
+  { value: "America/Toronto",     label: "Toronto — EST/EDT" },
+  { value: "America/Vancouver",   label: "Vancouver — PST/PDT" },
+  { value: "Europe/London",       label: "London — GMT/BST" },
+  { value: "Europe/Paris",        label: "Paris — CET/CEST" },
+  { value: "Europe/Berlin",       label: "Berlin — CET/CEST" },
+  { value: "Australia/Sydney",    label: "Sydney — AEST/AEDT" },
+  { value: "Australia/Melbourne", label: "Melbourne — AEST/AEDT" },
+  { value: "Pacific/Auckland",    label: "Auckland — NZST/NZDT" },
+] as const;
+
 export interface DaySchedule {
   open: string;
   close: string;
@@ -58,12 +76,17 @@ export interface BusinessDetails {
   services: string;
   location: string;
   phone: string;
+  timezone: string;
 }
 
 export interface VoiceSettings {
   agentName: string;
   tone: VoiceTone;
   forwardTo: string;
+  calendarConnected: boolean;
+  calendarEmail: string;
+  phoneOption: "new" | "forward" | "";
+  phoneNumber: string;
 }
 
 export interface WizardFormData {
@@ -76,13 +99,13 @@ export const AVAILABLE_AGENT_TYPES: AgentType[] = ["voice"];
 
 export function createDefaultWeekSchedule(): WeekSchedule {
   return {
-    monday: { open: "09:00", close: "17:00", closed: false },
-    tuesday: { open: "09:00", close: "17:00", closed: false },
+    monday:    { open: "09:00", close: "17:00", closed: false },
+    tuesday:   { open: "09:00", close: "17:00", closed: false },
     wednesday: { open: "09:00", close: "17:00", closed: false },
-    thursday: { open: "09:00", close: "17:00", closed: false },
-    friday: { open: "09:00", close: "17:00", closed: false },
-    saturday: { open: "10:00", close: "14:00", closed: false },
-    sunday: { open: "09:00", close: "17:00", closed: true },
+    thursday:  { open: "09:00", close: "17:00", closed: false },
+    friday:    { open: "09:00", close: "17:00", closed: false },
+    saturday:  { open: "10:00", close: "14:00", closed: false },
+    sunday:    { open: "09:00", close: "17:00", closed: true  },
   };
 }
 
@@ -98,11 +121,16 @@ export function createInitialWizardData(
       services: "",
       location: "",
       phone: "",
+      timezone: "Asia/Kolkata",
     },
     voice: {
       agentName: "",
       tone: "Friendly",
       forwardTo: "",
+      calendarConnected: false,
+      calendarEmail: "",
+      phoneOption: "",
+      phoneNumber: "",
     },
   };
 }

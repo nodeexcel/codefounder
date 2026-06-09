@@ -37,7 +37,7 @@ export async function loadWizardProgress(
   const voice = row.voice_settings ?? {};
 
   return {
-    step: Math.min(Math.max(row.current_step, 0), 3),
+    step: Math.min(Math.max(row.current_step, 0), 5),
     status: row.status,
     data: {
       agentType,
@@ -76,6 +76,7 @@ export async function saveWizardProgress(
       status,
       business_details: formData.business,
       voice_settings: formData.voice,
+      twilio_phone_number: formData.voice.phoneNumber || null,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id,agent_type" }

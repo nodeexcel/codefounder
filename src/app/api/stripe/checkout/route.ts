@@ -5,7 +5,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
 const stripe = stripeSecretKey
-  ? new Stripe(stripeSecretKey, { apiVersion: "2025-05-28.basil" })
+  ? new Stripe(stripeSecretKey, { apiVersion: "2026-05-27.dahlia" })
   : null;
 
 const PLAN_CONFIG = {

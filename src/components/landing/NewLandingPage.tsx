@@ -128,7 +128,7 @@ function initLandingInteractions() {
       e.preventDefault();
       const btn = btnId
         ? (document.getElementById(btnId) as HTMLButtonElement | null)
-        : form.querySelector('button[type="submit"]');
+        : form.querySelector<HTMLButtonElement>('button[type="submit"]');
       if (!btn) return;
       btn.textContent = "Sending...";
       btn.disabled = true;
