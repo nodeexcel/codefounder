@@ -11,11 +11,12 @@ export default function ContactPage() {
     e.preventDefault();
     setStatus("sending");
     try {
-      await fetch("https://formspree.io/f/placeholder", {
+      const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
+      if (!res.ok) throw new Error("failed");
       setStatus("sent");
       setForm({ name: "", email: "", company: "", message: "" });
     } catch {
@@ -123,7 +124,7 @@ export default function ContactPage() {
                   Message sent!
                 </h3>
                 <p style={{ color: "var(--muted)", fontSize: 14 }}>
-                  We&apos;ll get back to you at <strong>{form.email || "your email"}</strong> within 1 business day.
+                  Thanks! We&apos;ll get back to you within 24 hours.
                 </p>
                 <button
                   onClick={() => setStatus("idle")}

@@ -254,7 +254,7 @@ function WizardContent() {
     setProvisioning(true);
     setSaveError(null);
     try {
-      const res = await fetch("/api/twilio/provision-number", { method: "POST" });
+      const res = await fetch("/api/phone/provision-number", { method: "POST" });
       const result = (await res.json()) as {
         phoneNumber?: string;
         vapiPhoneNumberId?: string | null;
