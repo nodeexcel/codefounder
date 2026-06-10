@@ -151,13 +151,13 @@ function ProfileTab({ push }: { push: (msg: string, type: "success" | "error") =
             color: "#ffffff",
             background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%)",
             boxShadow: "0 0 20px var(--accent-glow)",
-            fontFamily: "Outfit, sans-serif",
+            fontFamily: "var(--font-heading)",
           }}
         >
           {initials || "?"}
         </div>
         <div>
-          <p className="font-[Outfit] font-medium" style={{ color: "var(--foreground)" }}>Profile picture</p>
+          <p className="font-heading font-medium" style={{ color: "var(--foreground)" }}>Profile picture</p>
           <p className="text-sm text-[var(--muted)]">Auto-generated from your name initials</p>
         </div>
       </div>
@@ -220,7 +220,7 @@ function ProfileTab({ push }: { push: (msg: string, type: "success" | "error") =
           type="submit"
           disabled={saving}
           className="relative overflow-hidden rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:shadow-lg disabled:opacity-60"
-          style={{ background: "var(--accent)", fontFamily: "Outfit, sans-serif" }}
+          style={{ background: "var(--accent)", fontFamily: "var(--font-heading)" }}
         >
           {saving ? "Saving…" : "Save profile"}
         </button>
@@ -266,7 +266,7 @@ function SecurityTab({ push }: { push: (msg: string, type: "success" | "error") 
   return (
     <form onSubmit={handleSave} className="space-y-6">
       <div>
-        <h3 className="font-[Outfit] mb-1 text-base font-semibold" style={{ color: "var(--foreground)" }}>
+        <h3 className="font-heading mb-1 text-base font-semibold" style={{ color: "var(--foreground)" }}>
           Change password
         </h3>
         <p className="text-sm text-[var(--muted)]">
@@ -314,7 +314,7 @@ function SecurityTab({ push }: { push: (msg: string, type: "success" | "error") 
           type="submit"
           disabled={saving || !isValid}
           className="rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:shadow-lg disabled:opacity-60"
-          style={{ background: "var(--accent)", fontFamily: "Outfit, sans-serif" }}
+          style={{ background: "var(--accent)", fontFamily: "var(--font-heading)" }}
         >
           {saving ? "Updating…" : "Update password"}
         </button>
@@ -380,7 +380,7 @@ function BusinessTab() {
           📞
         </div>
         <div>
-          <p className="font-[Outfit] font-medium" style={{ color: "var(--foreground)" }}>Voice Agent not configured</p>
+          <p className="font-heading font-medium" style={{ color: "var(--foreground)" }}>Voice Agent not configured</p>
           <p className="mt-1 text-sm text-[var(--muted)]">
             Complete the setup wizard to configure your Voice Agent.
           </p>
@@ -388,7 +388,7 @@ function BusinessTab() {
         <Link
           href="/wizard"
           className="mt-1 rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:shadow-lg"
-          style={{ background: "var(--accent)", fontFamily: "Outfit, sans-serif" }}
+          style={{ background: "var(--accent)", fontFamily: "var(--font-heading)" }}
         >
           Start setup wizard
         </Link>
@@ -473,7 +473,7 @@ function InfoSection({ title, children }: { title: string; children: React.React
       className="rounded-xl px-5 py-4 transition-all duration-200"
       style={{ background: "var(--card2)", border: "1px solid var(--border)" }}
     >
-      <h4 className="mb-3 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
+      <h4 className="mb-3 font-heading text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
         {title}
       </h4>
       <div className="space-y-2">{children}</div>
@@ -509,7 +509,7 @@ export default function SettingsPage() {
 
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-2xl">
-          <p className="mb-6 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[var(--accent)]">
+          <p className="mb-6 font-heading text-[11px] font-semibold uppercase tracking-[3px] text-[var(--accent)]">
             Account Settings
           </p>
 
@@ -529,9 +529,9 @@ export default function SettingsPage() {
                         background: "var(--accent)",
                         color: "var(--foreground)",
                         boxShadow: "0 0 16px rgba(232,123,44,0.3)",
-                        fontFamily: "Outfit, sans-serif",
+                        fontFamily: "var(--font-heading)",
                       }
-                    : { color: "var(--muted)", fontFamily: "Outfit, sans-serif" }
+                    : { color: "var(--muted)", fontFamily: "var(--font-heading)" }
                 }
                 onMouseEnter={(e) => {
                   if (activeTab !== tab.id) {

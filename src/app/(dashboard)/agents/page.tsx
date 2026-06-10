@@ -47,7 +47,7 @@ export default async function AgentsPage() {
 
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="mb-6 flex items-center justify-between">
-          <p className="font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
+          <p className="font-heading text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
             All Agents
           </p>
           <Button href="/wizard?new=true" variant="primary" size="sm">
@@ -110,7 +110,7 @@ export default async function AgentsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-[Outfit] text-lg font-semibold" style={{ color: "var(--foreground)" }}>
+                      <h3 className="font-heading text-lg font-semibold" style={{ color: "var(--foreground)" }}>
                         {agent.name}
                       </h3>
                       {isComingSoon ? (

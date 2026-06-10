@@ -116,7 +116,7 @@ export default function CallsPage() {
       />
 
       <div className="p-4 sm:p-6 lg:p-8">
-        <p className="mb-6 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
+        <p className="mb-6 font-heading text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
           Call History
         </p>
 
@@ -198,7 +198,7 @@ export default function CallsPage() {
               </svg>
             </div>
             <div>
-              <p className="font-[Outfit] text-lg font-medium" style={{ color: "var(--foreground)" }}>No calls yet</p>
+              <p className="font-heading text-lg font-medium" style={{ color: "var(--foreground)" }}>No calls yet</p>
               <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
                 {search || dateFilter
                   ? "No calls match your filters."

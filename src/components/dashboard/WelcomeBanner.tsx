@@ -9,14 +9,14 @@ export function WelcomeBanner() {
   if (loading) {
     return (
       <div
-        className="rounded-xl p-6 animate-pulse"
-        style={{ background: "var(--card-elevated)", border: "1px solid var(--border)" }}
+        className="rounded-2xl p-5 animate-pulse"
+        style={{ background: "var(--card)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}
       >
         <div className="flex items-center gap-4">
-          <div className="h-14 w-14 rounded-full" style={{ background: "var(--surface2)" }} />
-          <div className="space-y-2">
-            <div className="h-6 w-48 rounded" style={{ background: "var(--surface2)" }} />
-            <div className="h-4 w-64 rounded" style={{ background: "var(--surface2)" }} />
+          <div className="h-12 w-12 rounded-xl shrink-0" style={{ background: "var(--surface2)" }} />
+          <div className="space-y-2 flex-1">
+            <div className="h-5 w-40 rounded-md" style={{ background: "var(--surface2)" }} />
+            <div className="h-3.5 w-56 rounded-md" style={{ background: "var(--surface2)" }} />
           </div>
         </div>
       </div>
@@ -26,50 +26,58 @@ export function WelcomeBanner() {
   if (!profile) return null;
 
   const firstName = getFirstName(profile.full_name);
-  const initials = getInitials(profile.full_name);
+  const initials  = getInitials(profile.full_name);
 
   return (
     <div
-      className="group relative overflow-hidden rounded-2xl px-6 py-5 transition-all duration-300"
+      className="relative overflow-hidden rounded-2xl px-5 py-4"
       style={{
-        background: "linear-gradient(135deg, var(--card2) 0%, var(--card) 100%)",
-        border: "1px solid rgba(255,122,26,0.18)",
+        background: "var(--card)",
+        border: "1px solid var(--border)",
+        boxShadow: "var(--shadow-sm)",
       }}
     >
+      {/* Top accent line */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-70"
-        style={{ background: "linear-gradient(90deg, transparent, var(--accent) 30%, var(--accent-light) 60%, transparent)" }}
+        className="pointer-events-none absolute inset-x-0 top-0 h-[1px]"
+        style={{ background: "linear-gradient(90deg, var(--accent) 0%, var(--accent-light) 30%, transparent 70%)", opacity: 0.6 }}
       />
+      {/* Subtle glow */}
       <div
-        className="pointer-events-none absolute -top-12 -right-12 h-48 w-48 rounded-full opacity-[0.07]"
-        style={{ background: "radial-gradient(circle, var(--accent) 0%, transparent 70%)" }}
+        className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full"
+        style={{ background: "radial-gradient(circle, rgba(255,122,26,0.06) 0%, transparent 70%)" }}
       />
-      <div
-        className="pointer-events-none absolute bottom-0 left-0 h-24 w-48 opacity-[0.04]"
-        style={{ background: "radial-gradient(circle, var(--accent-light) 0%, transparent 70%)" }}
-      />
-      <div className="relative flex items-center gap-4">
+
+      <div className="relative flex items-center gap-3.5">
+        {/* Avatar */}
         <div
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-base font-bold text-white"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[13px] font-bold text-white"
           style={{
             background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%)",
-            boxShadow: "0 0 24px var(--accent-glow)",
-            fontFamily: "Outfit, sans-serif",
+            boxShadow: "0 4px 12px rgba(255,122,26,0.30)",
+            fontFamily: "var(--font-heading)",
           }}
           aria-hidden
         >
           {initials}
         </div>
-        <div>
+
+        <div className="min-w-0">
           <h2
-            className="font-[Outfit] text-lg font-bold sm:text-xl"
-            style={{ letterSpacing: "-0.02em", color: "var(--foreground)" }}
+            className="text-[17px] font-bold leading-snug"
+            style={{ fontFamily: "var(--font-heading)", letterSpacing: "-0.02em", color: "var(--foreground)" }}
           >
             Welcome back, {firstName}
           </h2>
-          <p className="mt-0.5 text-sm" style={{ color: "var(--muted)" }}>
+          <p className="mt-0.5 text-sm" style={{ color: "var(--muted)", fontFamily: "var(--font-sans)" }}>
             @{profile.username} · Your AI agents are ready
           </p>
+        </div>
+
+        {/* Live indicator */}
+        <div className="ml-auto hidden sm:flex items-center gap-1.5 rounded-full px-3 py-1" style={{ background: "var(--success-bg)", border: "1px solid rgba(16,185,129,0.20)" }}>
+          <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: "var(--success)" }} />
+          <span className="text-[11px] font-semibold" style={{ color: "var(--success)", fontFamily: "var(--font-sans)" }}>System live</span>
         </div>
       </div>
     </div>

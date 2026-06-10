@@ -7,7 +7,7 @@ import { formatDuration, timeAgo } from "@/lib/format";
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-4 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
+    <p className="mb-4 font-heading text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
       {children}
     </p>
   );
@@ -172,7 +172,7 @@ export default async function DashboardPage() {
                   </div>
                 </div>
                 <p
-                  className="mt-3 font-[Outfit] text-3xl font-bold"
+                  className="mt-3 font-heading text-3xl font-bold"
                   style={{ letterSpacing: "-0.02em", color: "var(--foreground)" }}
                 >
                   {stat.value}
@@ -216,10 +216,10 @@ export default async function DashboardPage() {
               className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-0 transition-opacity duration-300 group-hover:opacity-100"
               style={{ background: "linear-gradient(90deg, var(--accent), var(--accent-light), transparent)" }}
             />
-            <p className="mb-1 text-xs font-semibold uppercase tracking-[2px] font-[Outfit]" style={{ color: "var(--accent)" }}>
+            <p className="mb-1 text-xs font-semibold uppercase tracking-[2px] font-heading" style={{ color: "var(--accent)" }}>
               Plan
             </p>
-            <p className="font-[Outfit] text-2xl font-bold" style={{ letterSpacing: "-0.02em", color: "var(--foreground)" }}>
+            <p className="font-heading text-2xl font-bold" style={{ letterSpacing: "-0.02em", color: "var(--foreground)" }}>
               {currentPlan}
             </p>
             <p className="mt-1 text-xs" style={{ color: "var(--muted-low)" }}>
@@ -247,10 +247,10 @@ export default async function DashboardPage() {
             />
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[2px] font-[Outfit] mb-1" style={{ color: "var(--accent)" }}>
+                <p className="text-xs font-semibold uppercase tracking-[2px] font-heading mb-1" style={{ color: "var(--accent)" }}>
                   Live Agents
                 </p>
-                <h3 className="font-[Outfit] text-base font-semibold" style={{ color: "var(--foreground)" }}>Active agents</h3>
+                <h3 className="font-heading text-base font-semibold" style={{ color: "var(--foreground)" }}>Active agents</h3>
               </div>
               <Button href="/agents" variant="ghost" size="sm">
                 View all
@@ -270,7 +270,7 @@ export default async function DashboardPage() {
                     <div className="flex items-center gap-3">
                       <span className="text-xl">{agent.icon}</span>
                       <div>
-                        <p className="font-[Outfit] text-sm font-medium" style={{ color: "var(--foreground)" }}>{agent.name}</p>
+                        <p className="font-heading text-sm font-medium" style={{ color: "var(--foreground)" }}>{agent.name}</p>
                         <p className="text-xs" style={{ color: "var(--muted-low)" }}>Voice Agent</p>
                       </div>
                     </div>
@@ -315,10 +315,10 @@ export default async function DashboardPage() {
           />
           <div className="flex items-center justify-between border-b px-6 py-4" style={{ borderColor: "var(--border)" }}>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[2px] font-[Outfit] mb-0.5" style={{ color: "var(--accent)" }}>
+              <p className="text-xs font-semibold uppercase tracking-[2px] font-heading mb-0.5" style={{ color: "var(--accent)" }}>
                 Voice Agent
               </p>
-              <h3 className="font-[Outfit] text-base font-semibold" style={{ color: "var(--foreground)" }}>Recent calls</h3>
+              <h3 className="font-heading text-base font-semibold" style={{ color: "var(--foreground)" }}>Recent calls</h3>
             </div>
             <Button href="/calls" variant="ghost" size="sm">
               View all
@@ -396,10 +396,10 @@ export default async function DashboardPage() {
           />
           <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="mb-1 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
+              <p className="mb-1 font-heading text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
                 Setup Wizard
               </p>
-              <h3 className="font-[Outfit] text-lg font-semibold" style={{ letterSpacing: "-0.01em", color: "var(--foreground)" }}>
+              <h3 className="font-heading text-lg font-semibold" style={{ letterSpacing: "-0.01em", color: "var(--foreground)" }}>
                 Ready to launch another agent?
               </h3>
               <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>

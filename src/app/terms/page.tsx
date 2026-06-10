@@ -4,7 +4,7 @@ export const metadata = { title: "Terms of Service — CodeFounder" };
 
 export default function TermsPage() {
   return (
-    <div style={{ background: "#0a0a0a", minHeight: "100vh", color: "#e5e7eb", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+    <div style={{ background: "#0a0a0a", minHeight: "100vh", color: "#e5e7eb", fontFamily: "var(--font-sans)" }}>
       <div style={{ maxWidth: 780, margin: "0 auto", padding: "60px 24px 80px" }}>
 
         <Link href="/" style={{ color: "#f97316", textDecoration: "none", fontSize: 14 }}>

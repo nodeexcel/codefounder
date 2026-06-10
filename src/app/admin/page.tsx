@@ -82,7 +82,7 @@ export default async function AdminDashboardPage() {
       >
         <div>
           <h1
-            className="text-base font-semibold text-white sm:text-lg font-[Outfit]"
+            className="text-base font-semibold text-white sm:text-lg font-heading"
             style={{ letterSpacing: "-0.015em" }}
           >
             Admin Overview
@@ -92,7 +92,7 @@ export default async function AdminDashboardPage() {
           </p>
         </div>
         <span
-          className="rounded-full px-3 py-1 text-xs font-semibold font-[Outfit]"
+          className="rounded-full px-3 py-1 text-xs font-semibold font-heading"
           style={{ background: "rgba(232,123,44,0.1)", color: "#E87B2C" }}
         >
           Admin
@@ -118,7 +118,7 @@ export default async function AdminDashboardPage() {
                 />
               )}
               <div className="flex items-center justify-between">
-                <p className="text-xs font-medium font-[Outfit]" style={{ color: "rgba(255,255,255,0.4)" }}>
+                <p className="text-xs font-medium font-heading" style={{ color: "rgba(255,255,255,0.4)" }}>
                   {stat.label}
                 </p>
                 <span
@@ -132,7 +132,7 @@ export default async function AdminDashboardPage() {
                 </span>
               </div>
               <p
-                className="mt-3 font-[Outfit] text-3xl font-bold"
+                className="mt-3 font-heading text-3xl font-bold"
                 style={{ color: stat.highlight ? "#E87B2C" : "white", letterSpacing: "-0.02em" }}
               >
                 {stat.value}
@@ -152,7 +152,7 @@ export default async function AdminDashboardPage() {
               className="px-5 py-4"
               style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
             >
-              <h2 className="font-semibold text-white font-[Outfit]">Recent Signups</h2>
+              <h2 className="font-semibold text-white font-heading">Recent Signups</h2>
               <p className="mt-0.5 text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
                 Latest user registrations
               </p>
@@ -207,7 +207,7 @@ export default async function AdminDashboardPage() {
               className="px-5 py-4"
               style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
             >
-              <h2 className="font-semibold text-white font-[Outfit]">Recent Calls</h2>
+              <h2 className="font-semibold text-white font-heading">Recent Calls</h2>
               <p className="mt-0.5 text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
                 Latest Voice Agent activity
               </p>
@@ -260,7 +260,7 @@ export default async function AdminDashboardPage() {
             className="rounded-2xl p-5"
             style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.07)" }}
           >
-            <h2 className="mb-4 font-semibold text-white font-[Outfit]">
+            <h2 className="mb-4 font-semibold text-white font-heading">
               Subscription Breakdown
             </h2>
             <div className="flex flex-wrap gap-3">
@@ -272,10 +272,10 @@ export default async function AdminDashboardPage() {
                     className="flex-1 rounded-xl px-4 py-3 text-center"
                     style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
                   >
-                    <p className="capitalize text-xs font-medium font-[Outfit]" style={{ color: "rgba(255,255,255,0.4)" }}>
+                    <p className="capitalize text-xs font-medium font-heading" style={{ color: "rgba(255,255,255,0.4)" }}>
                       {plan}
                     </p>
-                    <p className="mt-1.5 text-2xl font-bold text-white font-[Outfit]">{count}</p>
+                    <p className="mt-1.5 text-2xl font-bold text-white font-heading">{count}</p>
                     <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
                       ${PLAN_MRR[plan]}/mo each
                     </p>

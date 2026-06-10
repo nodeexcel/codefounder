@@ -305,6 +305,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         .auth-google-btn:hover:not(:disabled) {
           border-color: rgba(255,122,26,0.4) !important;
           background: var(--card-elevated) !important;
+          color: var(--foreground) !important;
         }
         .auth-submit-btn {
           position: relative;
@@ -343,18 +344,19 @@ export function AuthForm({ mode }: AuthFormProps) {
         justifyContent: "center",
         padding: "48px 16px",
         overflow: "hidden",
-        fontFamily: "'Plus Jakarta Sans', sans-serif",
+        fontFamily: "var(--font-sans)",
       }}>
         {/* Perspective grid */}
         <div style={{
           position: "absolute",
           inset: 0,
-          backgroundImage: "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)",
+          backgroundImage: "linear-gradient(var(--border2) 1px, transparent 1px), linear-gradient(90deg, var(--border2) 1px, transparent 1px)",
           backgroundSize: "60px 60px",
           maskImage: "radial-gradient(ellipse 90% 90% at 50% 50%, black 0%, transparent 72%)",
           WebkitMaskImage: "radial-gradient(ellipse 90% 90% at 50% 50%, black 0%, transparent 72%)",
           animation: "authGridMove 8s linear infinite",
           pointerEvents: "none",
+          opacity: 0.5,
         }} />
 
         {/* Ambient orange glow */}
@@ -451,7 +453,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 alt=""
               />
               <span style={{
-                fontFamily: "'Outfit', sans-serif",
+                fontFamily: "var(--font-heading)",
                 fontSize: "26px",
                 fontWeight: 800,
                 fontStyle: "italic",
@@ -471,7 +473,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               gap: "8px",
               background: "rgba(255,122,26,0.1)",
               border: "1px solid rgba(255,122,26,0.25)",
-              color: "#FF9B4A",
+              color: "var(--accent-light)",
               padding: "4px 14px",
               borderRadius: "100px",
               fontSize: "11px",
@@ -480,20 +482,21 @@ export function AuthForm({ mode }: AuthFormProps) {
               textTransform: "uppercase" as const,
               marginBottom: "14px",
             }}>
-              <span style={{ width: "6px", height: "6px", background: "#FF7A1A", borderRadius: "50%", display: "inline-block", flexShrink: 0 }} />
+              <span style={{ width: "6px", height: "6px", background: "var(--accent)", borderRadius: "50%", display: "inline-block", flexShrink: 0 }} />
               {isLogin ? "Secure Login" : "Get Started Free"}
             </div>
             <h1 style={{
-              fontFamily: "'Outfit', sans-serif",
+              fontFamily: "var(--font-heading)",
               fontSize: "28px",
               fontWeight: 800,
-              color: "#ffffff",
+              color: "var(--foreground)",
               marginBottom: "6px",
               lineHeight: 1.15,
+              letterSpacing: "-0.025em",
             }}>
               {isLogin ? "Welcome back" : "Create your account"}
             </h1>
-            <p style={{ fontSize: "14px", color: "#888888", lineHeight: 1.6, margin: 0 }}>
+            <p style={{ fontSize: "14px", color: "var(--muted)", lineHeight: 1.6, margin: 0, fontFamily: "var(--font-sans)" }}>
               {isLogin
                 ? "Sign in to manage your AI agents"
                 : "Start launching AI agents in minutes"}
@@ -516,9 +519,9 @@ export function AuthForm({ mode }: AuthFormProps) {
               background: "var(--card-elevated)",
               border: "1px solid rgba(255,255,255,0.1)",
               borderRadius: "10px",
-              color: "#ffffff",
+              color: "var(--foreground)",
               fontSize: "14px",
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontFamily: "var(--font-sans)",
               fontWeight: 500,
               cursor: loading ? "not-allowed" : "pointer",
               opacity: loading ? 0.5 : 1,
@@ -532,7 +535,7 @@ export function AuthForm({ mode }: AuthFormProps) {
 
           {/* Divider */}
           <div style={{ position: "relative", marginBottom: "20px" }}>
-            <div style={{ height: "1px", background: "rgba(255,255,255,0.07)" }} />
+            <div style={{ height: "1px", background: "var(--border2)" }} />
             <span style={{
               position: "absolute",
               top: "50%",
@@ -543,7 +546,8 @@ export function AuthForm({ mode }: AuthFormProps) {
               fontSize: "11px",
               textTransform: "uppercase" as const,
               letterSpacing: "2px",
-              color: "#444",
+              color: "var(--muted-low)",
+              fontFamily: "var(--font-sans)",
             }}>or</span>
           </div>
 
@@ -704,7 +708,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                       </svg>
                     )}
                   </div>
-                  <span style={{ fontSize: "13px", color: "#888888", lineHeight: 1.55 }}>
+                  <span style={{ fontSize: "13px", color: "var(--muted)", lineHeight: 1.55, fontFamily: "var(--font-sans)" }}>
                     I agree to the{" "}
                     <a
                       href="/terms"
@@ -748,8 +752,9 @@ export function AuthForm({ mode }: AuthFormProps) {
                   marginTop: "8px",
                   paddingLeft: "27px",
                   fontSize: "11px",
-                  color: "#555555",
+                  color: "var(--muted-low)",
                   lineHeight: 1.55,
+                  fontFamily: "var(--font-sans)",
                 }}>
                   By signing up, you acknowledge that CodeFounder deploys AI-powered voice agents that interact with real callers.
                 </p>
@@ -785,7 +790,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 borderRadius: "10px",
                 color: "#ffffff",
                 fontSize: "15px",
-                fontFamily: "'Outfit', sans-serif",
+                fontFamily: "var(--font-heading)",
                 fontWeight: 600,
                 cursor: loading || !formValid ? "not-allowed" : "pointer",
                 opacity: loading || !formValid ? 0.55 : 1,
@@ -805,7 +810,8 @@ export function AuthForm({ mode }: AuthFormProps) {
               <p style={{
                 textAlign: "center",
                 fontSize: "12px",
-                color: "#555",
+                color: "var(--muted-low)",
+                fontFamily: "var(--font-sans)",
                 margin: 0,
               }}>
                 Complete all fields correctly to continue
@@ -818,7 +824,8 @@ export function AuthForm({ mode }: AuthFormProps) {
             marginTop: "24px",
             textAlign: "center",
             fontSize: "13px",
-            color: "#666",
+            color: "var(--muted)",
+            fontFamily: "var(--font-sans)",
             margin: "24px 0 0",
           }}>
             {isLogin ? "Don't have an account? " : "Already have an account? "}

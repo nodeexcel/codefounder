@@ -23,10 +23,7 @@ export function DashboardNavbar({ title, subtitle }: DashboardNavbarProps) {
   }, []);
 
   function clearAuthCookies() {
-    const cookieNames = document.cookie
-      .split(";")
-      .map((c) => c.split("=")[0]?.trim())
-      .filter(Boolean);
+    const cookieNames = document.cookie.split(";").map((c) => c.split("=")[0]?.trim()).filter(Boolean);
     for (const name of cookieNames) {
       if (!name.startsWith("sb-")) continue;
       document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
@@ -46,57 +43,57 @@ export function DashboardNavbar({ title, subtitle }: DashboardNavbarProps) {
     : user?.email?.split("@")[0] ?? "there";
   const initials = profile
     ? getInitials(profile.full_name)
-    : user?.email
-      ? user.email.slice(0, 2).toUpperCase()
-      : "?";
+    : user?.email ? user.email.slice(0, 2).toUpperCase() : "?";
 
   return (
     <header
-      className="sticky top-0 z-40 flex min-h-[60px] items-center justify-between gap-4 px-5 py-3 sm:px-7 lg:px-8"
+      className="sticky top-0 z-40 flex min-h-[56px] items-center justify-between gap-4 px-5 py-2.5 sm:px-6 lg:px-7"
       style={{
         background: "var(--nav-bg)",
         borderBottom: "1px solid var(--border)",
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
       }}
     >
-      {/* Title block */}
+      {/* Title */}
       <div className="min-w-0">
         <h1
-          className="truncate text-base font-semibold sm:text-lg"
-          style={{ fontFamily: "Outfit, sans-serif", letterSpacing: "-0.015em", color: "var(--foreground)" }}
+          className="truncate text-[15px] font-semibold leading-snug"
+          style={{ fontFamily: "var(--font-heading)", letterSpacing: "-0.02em", color: "var(--foreground)" }}
         >
           {title}
         </h1>
         {subtitle && (
-          <p className="truncate text-xs sm:text-sm" style={{ color: "var(--muted-low)" }}>
+          <p className="truncate text-[12px] leading-tight" style={{ color: "var(--muted)", fontFamily: "var(--font-sans)" }}>
             {subtitle}
           </p>
         )}
       </div>
 
       {/* Right side */}
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1.5">
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}
           aria-label="Toggle theme"
-          className="flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200"
-          style={{ background: "var(--surface2)", border: "1px solid var(--border)", color: "var(--muted)" }}
+          className="flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-150"
+          style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--muted)" }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.background = "var(--surface2)";
             (e.currentTarget as HTMLElement).style.color = "var(--foreground)";
+            (e.currentTarget as HTMLElement).style.borderColor = "var(--border2)";
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLElement).style.color = "var(--muted)";
+            (e.currentTarget as HTMLElement).style.borderColor = "var(--border)";
           }}
         >
           {theme === "dark" ? (
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-              <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+              <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/>
+              <line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/>
+              <line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
             </svg>
           ) : (
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -106,25 +103,21 @@ export function DashboardNavbar({ title, subtitle }: DashboardNavbarProps) {
         </button>
 
         {!profileLoading && (profile || user) && (
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 pl-1">
             <div className="hidden text-right sm:block">
-              <p
-                className="text-sm font-medium"
-                style={{ color: "var(--foreground)", fontFamily: "Outfit, sans-serif", opacity: 0.85 }}
-              >
+              <p className="text-[13px] font-medium leading-tight" style={{ color: "var(--foreground)", fontFamily: "var(--font-sans)" }}>
                 {displayName}
               </p>
-              <p className="text-[11px]" style={{ color: "var(--muted-low)" }}>
+              <p className="text-[11px]" style={{ color: "var(--muted)", fontFamily: "var(--font-sans)" }}>
                 {profile ? `@${profile.username}` : user?.email}
               </p>
             </div>
-
             <div
               className="flex h-8 w-8 cursor-default items-center justify-center rounded-full text-[12px] font-bold text-white"
               style={{
                 background: "linear-gradient(135deg, var(--accent) 0%, #f59e0b 100%)",
                 boxShadow: "0 0 0 2px rgba(255,122,26,0.15), 0 2px 8px rgba(255,122,26,0.2)",
-                fontFamily: "Outfit, sans-serif",
+                fontFamily: "var(--font-heading)",
               }}
               title={profile?.full_name ?? user?.email ?? "Account"}
             >
@@ -135,23 +128,23 @@ export function DashboardNavbar({ title, subtitle }: DashboardNavbarProps) {
 
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-200"
-          style={{ color: "var(--muted-low)", fontFamily: "Outfit, sans-serif" }}
+          className="hidden sm:flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-150"
+          style={{ color: "var(--muted)", fontFamily: "var(--font-sans)" }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLElement).style.background = "var(--surface2)";
             (e.currentTarget as HTMLElement).style.color = "var(--foreground)";
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLElement).style.background = "";
-            (e.currentTarget as HTMLElement).style.color = "var(--muted-low)";
+            (e.currentTarget as HTMLElement).style.color = "var(--muted)";
           }}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
           </svg>
-          <span className="hidden sm:inline">Sign out</span>
+          Sign out
         </button>
       </div>
     </header>

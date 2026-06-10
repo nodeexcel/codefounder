@@ -4,7 +4,7 @@ export const metadata = { title: "Refund & Cancellation Policy — CodeFounder" 
 
 export default function RefundPage() {
   return (
-    <div style={{ background: "var(--background)", minHeight: "100vh", color: "var(--foreground)", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+    <div style={{ background: "var(--background)", minHeight: "100vh", color: "var(--foreground)", fontFamily: "var(--font-sans)" }}>
       <div style={{ maxWidth: 780, margin: "0 auto", padding: "60px 24px 80px" }}>
 
         <Link href="/" style={{ color: "var(--accent)", textDecoration: "none", fontSize: 14, fontFamily: "'Outfit', sans-serif" }}>

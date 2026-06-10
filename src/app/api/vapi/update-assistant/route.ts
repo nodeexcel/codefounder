@@ -62,6 +62,8 @@ export async function POST(request: Request) {
 
   const systemPrompt = buildVapiSystemPrompt(body.wizardData);
   const agentName = body.wizardData.voice.agentName.trim();
+  const businessName = body.wizardData.business.businessName.trim();
+  const firstMessage = `Hello! You've reached ${businessName}. I'm ${agentName}, your AI assistant. Please note you are speaking with an AI. How can I help you today?`;
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
   const calendarToolServer: Record<string, unknown> = {
@@ -160,9 +162,11 @@ export async function POST(request: Request) {
         },
         body: JSON.stringify({
           name: agentName,
+          firstMessage,
           model: modelPayload,
           transcriber: transcriberConfig,
           voice: voiceConfig,
+          startSpeakingPlan: { waitSeconds: 0 },
           ...latencyConfig,
           ...forwardingConfig,
         }),
@@ -190,9 +194,11 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         name: agentName,
+        firstMessage,
         model: modelPayload,
         transcriber: transcriberConfig,
         voice: voiceConfig,
+        startSpeakingPlan: { waitSeconds: 0 },
         ...latencyConfig,
       }),
     });

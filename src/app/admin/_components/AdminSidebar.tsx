@@ -31,7 +31,7 @@ export function AdminSidebar() {
 
         <div className="px-4 pt-4 pb-1">
           <span
-            className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold font-[Outfit]"
+            className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold font-heading"
             style={{ background: "rgba(232,123,44,0.1)", color: "#E87B2C" }}
           >
             Admin Panel
@@ -47,7 +47,7 @@ export function AdminSidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 font-[Outfit]"
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 font-heading"
                 style={
                   active
                     ? { background: "rgba(232, 123, 44, 0.1)", color: "#E87B2C" }
@@ -79,7 +79,7 @@ export function AdminSidebar() {
         >
           <Link
             href="/dashboard"
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 font-[Outfit]"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 font-heading"
             style={{ color: "rgba(255,255,255,0.3)" }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.7)";
@@ -110,7 +110,7 @@ export function AdminSidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex flex-1 flex-col items-center gap-0.5 py-3 text-[10px] font-medium font-[Outfit]"
+              className="flex flex-1 flex-col items-center gap-0.5 py-3 text-[10px] font-medium font-heading"
               style={{ color: active ? "#E87B2C" : "rgba(120,120,120,1)" }}
             >
               <span>{item.icon}</span>
@@ -120,7 +120,7 @@ export function AdminSidebar() {
         })}
         <Link
           href="/dashboard"
-          className="flex flex-1 flex-col items-center gap-0.5 py-3 text-[10px] font-medium font-[Outfit]"
+          className="flex flex-1 flex-col items-center gap-0.5 py-3 text-[10px] font-medium font-heading"
           style={{ color: "rgba(120,120,120,1)" }}
         >
           <span>←</span>

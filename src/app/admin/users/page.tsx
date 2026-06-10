@@ -72,7 +72,7 @@ export default async function AdminUsersPage({
       >
         <div>
           <h1
-            className="text-base font-semibold text-white sm:text-lg font-[Outfit]"
+            className="text-base font-semibold text-white sm:text-lg font-heading"
             style={{ letterSpacing: "-0.015em" }}
           >
             All Users
@@ -83,7 +83,7 @@ export default async function AdminUsersPage({
           </p>
         </div>
         <span
-          className="rounded-full px-3 py-1 text-xs font-semibold font-[Outfit]"
+          className="rounded-full px-3 py-1 text-xs font-semibold font-heading"
           style={{ background: "rgba(232,123,44,0.1)", color: "#E87B2C" }}
         >
           Admin
@@ -109,7 +109,7 @@ export default async function AdminUsersPage({
             />
             <button
               type="submit"
-              className="rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 font-[Outfit]"
+              className="rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 font-heading"
               style={{ background: "#E87B2C" }}
               onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = "#C4611A")}
               onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = "#E87B2C")}
@@ -119,7 +119,7 @@ export default async function AdminUsersPage({
             {safeQ && (
               <a
                 href="/admin/users"
-                className="flex items-center rounded-lg px-4 py-2.5 text-sm transition-colors font-[Outfit]"
+                className="flex items-center rounded-lg px-4 py-2.5 text-sm transition-colors font-heading"
                 style={{
                   border: "1px solid rgba(255,255,255,0.08)",
                   color: "rgba(255,255,255,0.4)",
@@ -137,7 +137,7 @@ export default async function AdminUsersPage({
             className="rounded-2xl py-16 text-center"
             style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.07)" }}
           >
-            <p className="text-lg font-medium text-white font-[Outfit]">No users found</p>
+            <p className="text-lg font-medium text-white font-heading">No users found</p>
             {safeQ && (
               <p className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
                 No results for &ldquo;{safeQ}&rdquo;. Try a different search.
@@ -157,7 +157,7 @@ export default async function AdminUsersPage({
                     {["Name", "Email", "Username", "Plan", "Status", "Joined"].map((col) => (
                       <th
                         key={col}
-                        className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider font-[Outfit]"
+                        className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider font-heading"
                         style={{ color: "rgba(255,255,255,0.35)" }}
                       >
                         {col}
@@ -188,14 +188,14 @@ export default async function AdminUsersPage({
                       <td className="px-5 py-3.5">
                         {u.subscription ? (
                           <span
-                            className="rounded-full px-2.5 py-0.5 text-xs font-medium capitalize font-[Outfit]"
+                            className="rounded-full px-2.5 py-0.5 text-xs font-medium capitalize font-heading"
                             style={{ background: "rgba(232,123,44,0.1)", color: "#E87B2C" }}
                           >
                             {u.subscription.plan}
                           </span>
                         ) : (
                           <span
-                            className="rounded-full px-2.5 py-0.5 text-xs font-medium font-[Outfit]"
+                            className="rounded-full px-2.5 py-0.5 text-xs font-medium font-heading"
                             style={{
                               background: "rgba(255,255,255,0.06)",
                               color: "rgba(255,255,255,0.4)",
@@ -253,14 +253,14 @@ export default async function AdminUsersPage({
                     <div className="shrink-0 text-right">
                       {u.subscription ? (
                         <span
-                          className="rounded-full px-2.5 py-0.5 text-xs font-medium capitalize font-[Outfit]"
+                          className="rounded-full px-2.5 py-0.5 text-xs font-medium capitalize font-heading"
                           style={{ background: "rgba(232,123,44,0.1)", color: "#E87B2C" }}
                         >
                           {u.subscription.plan}
                         </span>
                       ) : (
                         <span
-                          className="rounded-full px-2.5 py-0.5 text-xs font-medium font-[Outfit]"
+                          className="rounded-full px-2.5 py-0.5 text-xs font-medium font-heading"
                           style={{
                             background: "rgba(255,255,255,0.06)",
                             color: "rgba(255,255,255,0.4)",

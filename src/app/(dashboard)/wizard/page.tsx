@@ -333,16 +333,28 @@ function WizardContent() {
       return;
     }
 
-    if (testCallActive) {
+    // End active call
+    if (testCallActive || testCallConnecting) {
       vapiRef.current?.stop();
+      vapiRef.current = null;
       setTestCallActive(false);
+      setTestCallConnecting(false);
       return;
     }
 
-    if (testCallConnecting) return;
-
     setSaveError(null);
     setTestCallConnecting(true);
+
+    // Request microphone permission explicitly before starting
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Release the stream immediately — Vapi SDK will open its own track
+      stream.getTracks().forEach((t) => t.stop());
+    } catch {
+      setSaveError("Microphone access denied. Please allow microphone access and try again.");
+      setTestCallConnecting(false);
+      return;
+    }
 
     const { data: sessionRow } = await supabase
       .from("agent_wizard_sessions")
@@ -361,22 +373,57 @@ function WizardContent() {
     }
 
     try {
+      // Clean up any stale instance
+      if (vapiRef.current) {
+        vapiRef.current.stop();
+        vapiRef.current = null;
+      }
+
       const Vapi = (await import("@vapi-ai/web")).default;
       const vapi = new Vapi(publicKey);
       vapiRef.current = vapi;
+
+      vapi.on("call-start", () => {
+        console.log("[vapi] Call started — assistantId:", assistantId);
+        setTestCallConnecting(false);
+        setTestCallActive(true);
+      });
       vapi.on("call-end", () => {
+        console.log("[vapi] Call ended");
         setTestCallActive(false);
         setTestCallConnecting(false);
+        vapiRef.current = null;
+      });
+      vapi.on("speech-start", () => {
+        console.log("[vapi] AI speaking");
+      });
+      vapi.on("speech-end", () => {
+        console.log("[vapi] AI stopped speaking");
+      });
+      vapi.on("message", (msg: unknown) => {
+        console.log("[vapi] Message:", msg);
       });
       vapi.on("error", (err: unknown) => {
+        console.error("[vapi] Error:", err);
         setTestCallActive(false);
         setTestCallConnecting(false);
-        setSaveError(err instanceof Error ? err.message : "Test call encountered an error.");
+        vapiRef.current = null;
+        const msg =
+          err instanceof Error
+            ? err.message
+            : typeof err === "object" && err !== null && "message" in err
+              ? String((err as { message: unknown }).message)
+              : "Test call encountered an error.";
+        setSaveError(msg);
       });
+
+      console.log("[vapi] Starting call with assistantId:", assistantId);
       await vapi.start(assistantId);
+      // call-start event drives setTestCallActive(true); if start() resolves
+      // without firing call-start, fall back gracefully
       setTestCallConnecting(false);
-      setTestCallActive(true);
     } catch (err) {
+      vapiRef.current = null;
       setTestCallConnecting(false);
       setSaveError(err instanceof Error ? err.message : "Failed to start test call.");
     }
@@ -425,7 +472,7 @@ function WizardContent() {
             >
               ✓
             </div>
-            <h2 className="font-[Outfit] text-2xl font-bold text-white">Voice Agent is live!</h2>
+            <h2 className="font-heading text-2xl font-bold text-white">Voice Agent is live!</h2>
             <p className="mt-2 text-[#888]">
               {launchSummary?.agentName || data.voice.agentName || "Your agent"}{" "}
               is ready to handle calls for{" "}
@@ -437,7 +484,7 @@ function WizardContent() {
                 style={{ background: "rgba(255,122,26,0.07)", border: "1px solid rgba(255,122,26,0.2)" }}
               >
                 <p className="text-xs text-[#888]">Assigned phone number</p>
-                <p className="mt-1 font-[Outfit] text-lg font-bold text-[var(--accent)]">
+                <p className="mt-1 font-heading text-lg font-bold text-[var(--accent)]">
                   {launchSummary.phoneNumber}
                 </p>
               </div>
@@ -460,7 +507,7 @@ function WizardContent() {
       />
 
       <div className="mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
-        <p className="mb-6 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[var(--accent)]">
+        <p className="mb-6 font-heading text-[11px] font-semibold uppercase tracking-[3px] text-[var(--accent)]">
           Agent Configuration
         </p>
 
@@ -468,7 +515,7 @@ function WizardContent() {
         <div className="mb-8">
           <div className="mb-3 flex items-center justify-between text-sm">
             <span className="text-[#888]">Progress</span>
-            <span className="font-[Outfit] font-semibold text-[var(--accent)]">
+            <span className="font-heading font-semibold text-[var(--accent)]">
               {Math.round(((step + 1) / WIZARD_STEPS.length) * 100)}%
             </span>
           </div>
@@ -489,7 +536,7 @@ function WizardContent() {
                   {i < step ? "✓" : i + 1}
                 </div>
                 <span
-                  className="mt-2 hidden text-center text-[10px] leading-tight font-[Outfit] transition-colors duration-300 sm:block sm:text-[11px]"
+                  className="mt-2 hidden text-center text-[10px] leading-tight font-heading transition-colors duration-300 sm:block sm:text-[11px]"
                   style={{ color: i <= step ? "var(--accent)" : "var(--muted)" }}
                 >
                   {label}
@@ -526,7 +573,7 @@ function WizardContent() {
           {/* ── Step 0 — Choose Agent ─────────────────────────────────────────── */}
           {step === 0 && (
             <div>
-              <h2 className="font-[Outfit] mb-2 text-xl font-bold text-white">
+              <h2 className="font-heading mb-2 text-xl font-bold text-white">
                 Choose your agent type
               </h2>
               <p className="mb-6 text-sm text-[#888]">
@@ -564,7 +611,7 @@ function WizardContent() {
                         </span>
                       )}
                       <span className="text-2xl">{agent.icon}</span>
-                      <p className="mt-2 font-[Outfit] font-semibold text-white">{agent.name}</p>
+                      <p className="mt-2 font-heading font-semibold text-white">{agent.name}</p>
                       <p className="mt-1 text-xs leading-relaxed text-[#888]">{agent.description}</p>
                     </button>
                   );
@@ -577,7 +624,7 @@ function WizardContent() {
           {step === 1 && (
             <div className="space-y-5">
               <div>
-                <h2 className="font-[Outfit] text-xl font-bold text-white">Business profile</h2>
+                <h2 className="font-heading text-xl font-bold text-white">Business profile</h2>
                 <p className="mt-1 text-sm text-[#888]">
                   Help your AI Receptionist answer caller questions accurately.
                 </p>
@@ -714,7 +761,7 @@ function WizardContent() {
           {step === 2 && (
             <div className="space-y-5">
               <div>
-                <h2 className="font-[Outfit] text-xl font-bold text-white">Configure agent</h2>
+                <h2 className="font-heading text-xl font-bold text-white">Configure agent</h2>
                 <p className="mt-1 text-sm text-[#888]">
                   Set how your AI Receptionist sounds and handles calls.
                 </p>
@@ -789,7 +836,7 @@ function WizardContent() {
           {step === 3 && (
             <div className="space-y-6">
               <div>
-                <h2 className="font-[Outfit] text-xl font-bold text-white">Connect Google Calendar</h2>
+                <h2 className="font-heading text-xl font-bold text-white">Connect Google Calendar</h2>
                 <p className="mt-1 text-sm text-[#888]">
                   Allow your AI Receptionist to book appointments directly into your calendar.
                 </p>
@@ -815,7 +862,7 @@ function WizardContent() {
                     ✓
                   </div>
                   <div>
-                    <p className="font-[Outfit] font-semibold text-white">Calendar connected</p>
+                    <p className="font-heading font-semibold text-white">Calendar connected</p>
                     {data.voice.calendarEmail && (
                       <p className="mt-0.5 text-sm text-[#888]">{data.voice.calendarEmail}</p>
                     )}
@@ -867,7 +914,7 @@ function WizardContent() {
           {step === 4 && (
             <div className="space-y-6">
               <div>
-                <h2 className="font-[Outfit] text-xl font-bold text-white">Connect a phone number</h2>
+                <h2 className="font-heading text-xl font-bold text-white">Connect a phone number</h2>
                 <p className="mt-1 text-sm text-[#888]">
                   Choose how callers will reach your AI Receptionist.
                 </p>
@@ -898,7 +945,7 @@ function WizardContent() {
                       }}
                     >
                       <span className="text-2xl">{icon}</span>
-                      <p className="mt-2 font-[Outfit] font-semibold text-white">{label}</p>
+                      <p className="mt-2 font-heading font-semibold text-white">{label}</p>
                       <p className="mt-1 text-xs leading-relaxed text-[#888]">{desc}</p>
                     </button>
                   );
@@ -916,7 +963,7 @@ function WizardContent() {
                     >
                       <div>
                         <p className="text-xs text-[#888]">Your dedicated number</p>
-                        <p className="mt-0.5 font-[Outfit] text-xl font-bold text-white">
+                        <p className="mt-0.5 font-heading text-xl font-bold text-white">
                           {data.voice.phoneNumber}
                         </p>
                       </div>
@@ -984,7 +1031,7 @@ function WizardContent() {
           {/* ── Step 5 — Test & Launch ────────────────────────────────────────── */}
           {step === 5 && (
             <div>
-              <h2 className="font-[Outfit] mb-2 text-xl font-bold text-white">
+              <h2 className="font-heading mb-2 text-xl font-bold text-white">
                 Test & go live
               </h2>
               <p className="mb-6 text-sm text-[#888]">
@@ -1042,9 +1089,12 @@ function WizardContent() {
                 className="mb-6 rounded-xl p-5"
                 style={{ background: "rgba(255,122,26,0.04)", border: "1px solid rgba(255,122,26,0.15)" }}
               >
-                <p className="mb-1 font-[Outfit] font-semibold text-white">Test your agent</p>
-                <p className="mb-4 text-sm text-[#888]">
+                <p className="mb-1 font-heading font-semibold text-white">Test your agent</p>
+                <p className="mb-1 text-sm text-[#888]">
                   Have a live conversation with your AI Receptionist before going live.
+                </p>
+                <p className="mb-4 text-xs" style={{ color: "var(--muted)" }}>
+                  Test calls use minimal credits (~$0.05-0.10 per minute)
                 </p>
                 <Button
                   variant={testCallActive ? "ghost" : "secondary"}
@@ -1110,7 +1160,7 @@ function WizardContent() {
 function ReviewSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="pb-4 last:pb-0" style={{ borderBottom: "1px solid var(--surface2)" }}>
-      <h3 className="mb-2 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[var(--accent)]">
+      <h3 className="mb-2 font-heading text-[11px] font-semibold uppercase tracking-[3px] text-[var(--accent)]">
         {title}
       </h3>
       <div className="space-y-2">{children}</div>

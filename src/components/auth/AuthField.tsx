@@ -53,7 +53,7 @@ export function AuthField({
           fontSize: "13px",
           fontWeight: 500,
           color: "var(--muted)",
-          fontFamily: "'Plus Jakarta Sans', sans-serif",
+          fontFamily: "var(--font-sans)",
         }}
       >
         {label}
@@ -74,7 +74,7 @@ export function AuthField({
             color: "var(--foreground)",
             padding: showPasswordToggle ? "12px 44px 12px 16px" : "12px 16px",
             fontSize: "14px",
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontFamily: "var(--font-sans)",
             outline: "none",
             transition: "border-color 0.2s, box-shadow 0.2s",
           }}
@@ -124,7 +124,7 @@ export function AuthField({
       {touched && error && (
         <p
           id={`${inputId}-error`}
-          style={{ marginTop: "6px", fontSize: "12px", color: "#f87171", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+          style={{ marginTop: "6px", fontSize: "12px", color: "var(--danger)", fontFamily: "var(--font-sans)" }}
         >
           {error}
         </p>
@@ -132,7 +132,7 @@ export function AuthField({
       {hint && !error && (
         <p
           id={`${inputId}-hint`}
-          style={{ marginTop: "6px", fontSize: "12px", color: "var(--muted-low)", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+          style={{ marginTop: "6px", fontSize: "12px", color: "var(--muted-low)", fontFamily: "var(--font-sans)" }}
         >
           {hint}
         </p>

@@ -218,14 +218,14 @@ export default async function BillingPage() {
               </>
             )}
             <div className="relative mb-5 flex items-center justify-between">
-              <p className="font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
+              <p className="font-heading text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
                 Current Plan
               </p>
               {!isSubscribed && (
                 <a
                   href="/pricing"
                   className="relative overflow-hidden rounded-lg px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:shadow-lg"
-                  style={{ background: "var(--accent)", fontFamily: "Outfit, sans-serif" }}
+                  style={{ background: "var(--accent)", fontFamily: "var(--font-heading)" }}
                 >
                   Upgrade plan →
                 </a>
@@ -235,7 +235,7 @@ export default async function BillingPage() {
             <div className="relative flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="font-[Outfit] text-2xl font-bold" style={{ color: "var(--foreground)" }}>{meta.label}</span>
+                  <span className="font-heading text-2xl font-bold" style={{ color: "var(--foreground)" }}>{meta.label}</span>
                   <Badge status={subStatus} />
                 </div>
 
@@ -270,7 +270,7 @@ export default async function BillingPage() {
                     <button
                       type="submit"
                       className="w-full rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:shadow-lg"
-                      style={{ background: "var(--accent)", fontFamily: "Outfit, sans-serif" }}
+                      style={{ background: "var(--accent)", fontFamily: "var(--font-heading)" }}
                     >
                       Manage Billing
                     </button>
@@ -282,7 +282,7 @@ export default async function BillingPage() {
                       style={{
                         border: "1px solid var(--border2)",
                         color: "var(--muted)",
-                        fontFamily: "Outfit, sans-serif",
+                        fontFamily: "var(--font-heading)",
                         background: "transparent",
                       }}
                     >
@@ -307,7 +307,7 @@ export default async function BillingPage() {
               style={{ background: "linear-gradient(90deg, var(--accent)/40, var(--accent-light)/20, transparent)" }}
             />
             <div className="mb-5 flex items-center justify-between">
-              <p className="font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
+              <p className="font-heading text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
                 Usage This Month
               </p>
               <span className="text-xs" style={{ color: "var(--muted)" }}>
@@ -334,7 +334,7 @@ export default async function BillingPage() {
               className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-0 transition-opacity duration-300 group-hover:opacity-100"
               style={{ background: "linear-gradient(90deg, var(--accent)/40, var(--accent-light)/20, transparent)" }}
             />
-            <p className="mb-5 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
+            <p className="mb-5 font-heading text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
               Invoice History
             </p>
 

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { type ButtonHTMLAttributes, type ReactNode } from "react";
 
-type Variant = "primary" | "secondary" | "ghost" | "outline";
-type Size = "sm" | "md" | "lg";
+type Variant = "primary" | "secondary" | "ghost" | "outline" | "danger";
+type Size = "xs" | "sm" | "md" | "lg";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
@@ -10,22 +10,35 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   href?: string;
   fullWidth?: boolean;
+  loading?: boolean;
 }
 
 const variants: Record<Variant, string> = {
   primary:
-    "relative overflow-hidden bg-[var(--accent)] text-white hover:bg-[var(--accent-dark)] shadow-lg shadow-[var(--accent)]/25 hover:shadow-[var(--accent)]/40 hover:shadow-xl before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/[0.12] before:to-transparent before:-translate-x-full hover:before:translate-x-full before:transition-transform before:duration-500",
+    "relative overflow-hidden bg-[var(--accent)] text-white font-semibold shadow-md shadow-[var(--accent)]/20 " +
+    "hover:bg-[var(--accent-hover)] hover:shadow-lg hover:shadow-[var(--accent)]/30 hover:-translate-y-px " +
+    "active:translate-y-0 active:shadow-sm " +
+    "before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/[0.10] before:to-transparent before:-translate-x-full hover:before:translate-x-full before:transition-transform before:duration-500",
   secondary:
-    "bg-[var(--card-elevated)] text-[var(--foreground)] hover:text-[var(--accent)] hover:border-[var(--accent)]/50",
-  ghost: "bg-transparent text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface2)]",
+    "bg-[var(--card)] text-[var(--foreground)] border border-[var(--border2)] font-medium " +
+    "hover:border-[var(--accent)]/40 hover:text-[var(--accent)] hover:bg-[var(--card-elevated)] " +
+    "shadow-[var(--shadow-sm)]",
+  ghost:
+    "bg-transparent text-[var(--muted)] font-medium " +
+    "hover:text-[var(--foreground)] hover:bg-[var(--surface2)]",
   outline:
-    "bg-transparent text-[var(--muted)] hover:text-[var(--accent)] hover:border-[var(--accent)]/50 hover:shadow-md hover:shadow-[var(--accent)]/10",
+    "bg-transparent text-[var(--foreground)] border border-[var(--border2)] font-medium " +
+    "hover:border-[var(--accent)]/50 hover:text-[var(--accent)] hover:bg-[var(--accent-glow)]",
+  danger:
+    "bg-[var(--danger-bg)] text-[var(--danger)] border border-[var(--danger)]/20 font-medium " +
+    "hover:bg-[var(--danger)]/15 hover:border-[var(--danger)]/40",
 };
 
 const sizes: Record<Size, string> = {
-  sm: "px-3 py-1.5 text-sm",
-  md: "px-4 py-2 text-sm",
-  lg: "px-6 py-3 text-base",
+  xs: "h-7  px-2.5 text-xs  gap-1.5 rounded-md",
+  sm: "h-8  px-3   text-sm  gap-1.5 rounded-lg",
+  md: "h-9  px-4   text-sm  gap-2   rounded-lg",
+  lg: "h-11 px-5   text-base gap-2  rounded-xl",
 };
 
 export function Button({
@@ -34,17 +47,17 @@ export function Button({
   children,
   href,
   fullWidth,
+  loading,
   className = "",
   disabled,
   ...props
 }: ButtonProps) {
-  const hasBorder = variant === "secondary" || variant === "outline";
+  const isDisabled = disabled || loading;
 
   const classes = [
-    "inline-flex items-center justify-center gap-2 rounded-lg font-[Outfit] font-medium transition-all duration-200",
-    "focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 focus:ring-offset-2 focus:ring-offset-[var(--card2)]",
-    "disabled:opacity-50 disabled:cursor-not-allowed",
-    hasBorder ? "border border-white/[0.08]" : "",
+    "inline-flex items-center justify-center font-[var(--font-sans)] transition-all duration-200 cursor-pointer select-none",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]",
+    "disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none",
     variants[variant],
     sizes[size],
     fullWidth ? "w-full" : "",
@@ -53,17 +66,36 @@ export function Button({
     .filter(Boolean)
     .join(" ");
 
-  if (href) {
+  const inner = loading ? (
+    <>
+      <svg
+        className="animate-spin shrink-0"
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+      >
+        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+      </svg>
+      <span>{children}</span>
+    </>
+  ) : (
+    children
+  );
+
+  if (href && !isDisabled) {
     return (
       <Link href={href} className={classes}>
-        {children}
+        {inner}
       </Link>
     );
   }
 
   return (
-    <button className={classes} disabled={disabled} {...props}>
-      {children}
+    <button className={classes} disabled={isDisabled} {...props}>
+      {inner}
     </button>
   );
 }
