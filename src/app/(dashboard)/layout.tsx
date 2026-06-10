@@ -9,7 +9,7 @@ export default function DashboardLayout({
 }) {
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-[#0a0a0a] text-white">
+      <div className="min-h-screen" style={{ background: "var(--background)", color: "var(--foreground)" }}>
         <Sidebar />
         <ContentShift>{children}</ContentShift>
       </div>

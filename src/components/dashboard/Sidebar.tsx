@@ -12,8 +12,8 @@ import {
   Settings2,
   ShieldCheck,
   LogOut,
-  ChevronLeft,
-  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { createClient } from "@/lib/supabase";
@@ -58,33 +58,33 @@ function SidebarLink({
         className="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 overflow-hidden"
         style={
           active
-            ? { background: "rgba(232, 123, 44, 0.1)", color: "#E87B2C" }
-            : { color: "rgba(180, 180, 180, 0.9)" }
+            ? { background: "rgba(255,122,26,0.1)", color: "var(--accent)" }
+            : { color: "var(--muted)" }
         }
         onMouseEnter={(e) => {
           if (!active) {
-            (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
-            (e.currentTarget as HTMLElement).style.color = "#ffffff";
+            (e.currentTarget as HTMLElement).style.background = "var(--surface2)";
+            (e.currentTarget as HTMLElement).style.color = "var(--foreground)";
           }
         }}
         onMouseLeave={(e) => {
           if (!active) {
             (e.currentTarget as HTMLElement).style.background = "";
-            (e.currentTarget as HTMLElement).style.color = "rgba(180, 180, 180, 0.9)";
+            (e.currentTarget as HTMLElement).style.color = "var(--muted)";
           }
         }}
       >
         {active && (
           <span
             className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full"
-            style={{ background: "#E87B2C", boxShadow: "0 0 8px rgba(232, 123, 44, 0.7)" }}
+            style={{ background: "var(--accent)", boxShadow: "0 0 8px rgba(255,122,26,0.7)" }}
           />
         )}
         <Icon
           size={17}
           strokeWidth={active ? 2.2 : 1.8}
           className="shrink-0"
-          style={{ color: active ? "#E87B2C" : undefined }}
+          style={{ color: active ? "var(--accent)" : undefined }}
         />
         <span
           className="whitespace-nowrap font-[Outfit] tracking-wide overflow-hidden"
@@ -101,11 +101,12 @@ function SidebarLink({
       {isCollapsed && (
         <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2.5 z-50 pointer-events-none opacity-0 group-hover/nav:opacity-100 transition-opacity duration-150">
           <div
-            className="rounded-lg px-3 py-1.5 text-xs font-medium text-white whitespace-nowrap"
+            className="rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap"
             style={{
-              background: "#1e1e1e",
-              border: "1px solid rgba(255,255,255,0.1)",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+              background: "var(--tooltip-bg)",
+              border: "1px solid var(--border2)",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+              color: "var(--foreground)",
             }}
           >
             {item.label}
@@ -179,9 +180,9 @@ export function Sidebar() {
         className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 z-30"
         style={{
           width: isCollapsed ? 60 : 240,
-          transition: "width 300ms cubic-bezier(0.4, 0, 0.2, 1)",
-          background: "linear-gradient(180deg, #141414 0%, #111111 100%)",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
+          transition: "width 300ms cubic-bezier(0.4,0,0.2,1)",
+          background: "var(--sidebar-bg)",
+          borderRight: "1px solid var(--border)",
           overflow: "hidden",
         }}
       >
@@ -189,7 +190,7 @@ export function Sidebar() {
         <div
           className="flex h-16 items-center shrink-0"
           style={{
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            borderBottom: "1px solid var(--border)",
             paddingLeft: 14,
             paddingRight: 14,
           }}
@@ -199,8 +200,8 @@ export function Sidebar() {
               <span
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold text-white shrink-0"
                 style={{
-                  background: "linear-gradient(135deg, #E87B2C 0%, #f59e0b 100%)",
-                  boxShadow: "0 2px 8px rgba(232, 123, 44, 0.35)",
+                  background: "linear-gradient(135deg, var(--accent) 0%, #f59e0b 100%)",
+                  boxShadow: "0 2px 8px rgba(255,122,26,0.35)",
                   fontFamily: "Outfit, sans-serif",
                 }}
               >
@@ -225,7 +226,7 @@ export function Sidebar() {
 
           <div
             className="my-2 mx-1"
-            style={{ height: 1, background: "rgba(255,255,255,0.06)" }}
+            style={{ height: 1, background: "var(--border)" }}
           />
 
           {SECONDARY_NAV.map((item) => (
@@ -244,8 +245,8 @@ export function Sidebar() {
                 className="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 overflow-hidden"
                 style={
                   adminActive
-                    ? { background: "rgba(232, 123, 44, 0.15)", color: "#E87B2C" }
-                    : { background: "rgba(232, 123, 44, 0.05)", color: "#E87B2C" }
+                    ? { background: "rgba(255,122,26,0.15)", color: "var(--accent)" }
+                    : { background: "rgba(255,122,26,0.05)", color: "var(--accent)" }
                 }
               >
                 <ShieldCheck size={17} strokeWidth={1.8} className="shrink-0" />
@@ -263,11 +264,12 @@ export function Sidebar() {
               {isCollapsed && (
                 <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2.5 z-50 pointer-events-none opacity-0 group-hover/nav:opacity-100 transition-opacity duration-150">
                   <div
-                    className="rounded-lg px-3 py-1.5 text-xs font-medium text-white whitespace-nowrap"
+                    className="rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap"
                     style={{
-                      background: "#1e1e1e",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                      background: "var(--tooltip-bg)",
+                      border: "1px solid var(--border2)",
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+                      color: "var(--foreground)",
                     }}
                   >
                     Admin Panel
@@ -281,18 +283,18 @@ export function Sidebar() {
         {/* Footer */}
         <div
           className="shrink-0 p-2 space-y-0.5"
-          style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+          style={{ borderTop: "1px solid var(--border)" }}
         >
           {user && (
             <div
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 overflow-hidden"
-              style={{ background: "rgba(255,255,255,0.03)" }}
+              style={{ background: "var(--surface)" }}
             >
               <div
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
                 style={{
-                  background: "linear-gradient(135deg, #E87B2C 0%, #f59e0b 100%)",
-                  boxShadow: "0 2px 6px rgba(232, 123, 44, 0.3)",
+                  background: "linear-gradient(135deg, var(--accent) 0%, #f59e0b 100%)",
+                  boxShadow: "0 2px 6px rgba(255,122,26,0.3)",
                   fontFamily: "Outfit, sans-serif",
                 }}
               >
@@ -306,10 +308,10 @@ export function Sidebar() {
                   transition: "opacity 200ms, max-width 300ms cubic-bezier(0.4,0,0.2,1)",
                 }}
               >
-                <p className="truncate text-[11px] font-medium text-white/80 font-[Outfit]">
+                <p className="truncate text-[11px] font-medium font-[Outfit]" style={{ color: "var(--muted)" }}>
                   {displayEmail}
                 </p>
-                <p className="text-[10px] text-white/30">Signed in</p>
+                <p className="text-[10px]" style={{ color: "var(--muted-low)" }}>Signed in</p>
               </div>
             </div>
           )}
@@ -317,7 +319,16 @@ export function Sidebar() {
           <div className="relative group/signout">
             <button
               onClick={handleSignOut}
-              className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/40 transition-all duration-200 hover:text-white/70 hover:bg-white/[0.04] overflow-hidden"
+              className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200 overflow-hidden"
+              style={{ color: "var(--muted-low)" }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.background = "var(--surface2)";
+                (e.currentTarget as HTMLElement).style.color = "var(--muted)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = "";
+                (e.currentTarget as HTMLElement).style.color = "var(--muted-low)";
+              }}
             >
               <LogOut size={15} strokeWidth={1.8} className="shrink-0" />
               <span
@@ -334,11 +345,12 @@ export function Sidebar() {
             {isCollapsed && (
               <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2.5 z-50 pointer-events-none opacity-0 group-hover/signout:opacity-100 transition-opacity duration-150">
                 <div
-                  className="rounded-lg px-3 py-1.5 text-xs font-medium text-white whitespace-nowrap"
+                  className="rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap"
                   style={{
-                    background: "#1e1e1e",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                    background: "var(--tooltip-bg)",
+                    border: "1px solid var(--border2)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+                    color: "var(--foreground)",
                   }}
                 >
                   Sign out
@@ -349,14 +361,23 @@ export function Sidebar() {
 
           <button
             onClick={toggle}
-            className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/25 transition-all duration-200 hover:text-white/55 hover:bg-white/[0.03]"
+            className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200"
+            style={{ color: "var(--muted-low)" }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.background = "var(--surface)";
+              (e.currentTarget as HTMLElement).style.color = "var(--muted)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.background = "";
+              (e.currentTarget as HTMLElement).style.color = "var(--muted-low)";
+            }}
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {isCollapsed ? (
-              <ChevronRight size={14} strokeWidth={2} className="mx-auto" />
+              <PanelLeftOpen size={14} strokeWidth={2} className="mx-auto" />
             ) : (
               <>
-                <ChevronLeft size={14} strokeWidth={2} className="shrink-0" />
+                <PanelLeftClose size={14} strokeWidth={2} className="shrink-0" />
                 <span
                   className="text-xs font-[Outfit] overflow-hidden whitespace-nowrap"
                   style={{
@@ -377,8 +398,8 @@ export function Sidebar() {
       <nav
         className="lg:hidden fixed bottom-0 left-0 right-0 z-50 flex"
         style={{
-          background: "rgba(14, 14, 14, 0.97)",
-          borderTop: "1px solid rgba(255,255,255,0.08)",
+          background: "var(--nav-bg)",
+          borderTop: "1px solid var(--border)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
         }}
@@ -391,14 +412,14 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className="flex flex-1 flex-col items-center gap-1 py-3 text-[9px] font-medium transition-all duration-200"
-              style={{ color: active ? "#E87B2C" : "rgba(120, 120, 120, 1)" }}
+              style={{ color: active ? "var(--accent)" : "var(--muted-low)" }}
             >
               <Icon
                 size={18}
                 strokeWidth={active ? 2.2 : 1.6}
                 style={
                   active
-                    ? { filter: "drop-shadow(0 0 4px rgba(232, 123, 44, 0.6))" }
+                    ? { filter: "drop-shadow(0 0 4px rgba(255,122,26,0.6))" }
                     : undefined
                 }
               />
@@ -410,7 +431,7 @@ export function Sidebar() {
           <Link
             href="/admin"
             className="flex flex-1 flex-col items-center gap-1 py-3 text-[9px] font-medium"
-            style={{ color: "#E87B2C" }}
+            style={{ color: "var(--accent)" }}
           >
             <ShieldCheck size={18} strokeWidth={1.6} />
             <span className="font-[Outfit]">Admin</span>

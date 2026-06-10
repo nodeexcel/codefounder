@@ -34,14 +34,14 @@ export function AuthField({
       ? "rgba(239,68,68,0.5)"
       : touched && valid
         ? "rgba(34,197,94,0.45)"
-        : "rgba(255,255,255,0.08)";
+        : "var(--border2)";
 
   const focusShadow =
     touched && error
       ? "0 0 0 3px rgba(239,68,68,0.12)"
       : touched && valid
         ? "0 0 0 3px rgba(34,197,94,0.1)"
-        : "0 0 0 3px rgba(232,123,44,0.14)";
+        : "0 0 0 3px rgba(255,122,26,0.14)";
 
   return (
     <div style={{ width: "100%" }}>
@@ -52,7 +52,7 @@ export function AuthField({
           marginBottom: "6px",
           fontSize: "13px",
           fontWeight: 500,
-          color: "#aaaaaa",
+          color: "var(--muted)",
           fontFamily: "'Plus Jakarta Sans', sans-serif",
         }}
       >
@@ -68,10 +68,10 @@ export function AuthField({
           }
           style={{
             width: "100%",
-            background: "#141414",
+            background: "var(--card2)",
             border: `1px solid ${borderColor}`,
             borderRadius: "10px",
-            color: "#ffffff",
+            color: "var(--foreground)",
             padding: showPasswordToggle ? "12px 44px 12px 16px" : "12px 16px",
             fontSize: "14px",
             fontFamily: "'Plus Jakarta Sans', sans-serif",
@@ -83,7 +83,7 @@ export function AuthField({
               ? "rgba(239,68,68,0.6)"
               : touched && valid
                 ? "rgba(34,197,94,0.55)"
-                : "rgba(232,123,44,0.6)";
+                : "rgba(255,122,26,0.6)";
             e.currentTarget.style.boxShadow = focusShadow;
             props.onFocus?.(e);
           }}
@@ -107,14 +107,14 @@ export function AuthField({
               background: "none",
               border: "none",
               cursor: "pointer",
-              color: "#666",
+              color: "var(--muted-low)",
               padding: "2px",
               display: "flex",
               alignItems: "center",
               transition: "color 0.2s",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "#aaa"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "#666"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--muted)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--muted-low)"; }}
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
             {showPassword ? <EyeOffIcon /> : <EyeIcon />}
@@ -132,7 +132,7 @@ export function AuthField({
       {hint && !error && (
         <p
           id={`${inputId}-hint`}
-          style={{ marginTop: "6px", fontSize: "12px", color: "#555", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+          style={{ marginTop: "6px", fontSize: "12px", color: "var(--muted-low)", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
         >
           {hint}
         </p>

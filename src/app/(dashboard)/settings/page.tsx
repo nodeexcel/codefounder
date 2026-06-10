@@ -48,8 +48,8 @@ function ToastContainer({ toasts }: { toasts: ToastItem[] }) {
           className={[
             "rounded-lg border px-4 py-3 text-sm font-medium shadow-xl transition-all duration-300",
             t.type === "success"
-              ? "border-green-500/30 bg-[#0d1f0d] text-green-400"
-              : "border-red-500/30 bg-[#1f0d0d] text-red-400",
+              ? "border-green-500/30 bg-green-950/80 text-green-400"
+              : "border-red-500/30 bg-red-950/80 text-red-400",
           ].join(" ")}
         >
           {t.type === "success" ? "✓ " : "✗ "}
@@ -134,7 +134,7 @@ function ProfileTab({ push }: { push: (msg: string, type: "success" | "error") =
       <div className="flex items-center justify-center py-16">
         <div
           className="h-7 w-7 animate-spin rounded-full border-2"
-          style={{ borderColor: "#E87B2C", borderTopColor: "transparent" }}
+          style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }}
         />
       </div>
     );
@@ -146,18 +146,19 @@ function ProfileTab({ push }: { push: (msg: string, type: "success" | "error") =
     <form onSubmit={handleSave} className="space-y-6">
       <div className="flex items-center gap-5">
         <div
-          className="flex h-16 w-16 items-center justify-center rounded-full text-xl font-bold text-white transition-all duration-300 hover:scale-105"
+          className="flex h-16 w-16 items-center justify-center rounded-full text-xl font-bold transition-all duration-300 hover:scale-105"
           style={{
-            background: "linear-gradient(135deg, #E87B2C 0%, #f59e0b 100%)",
-            boxShadow: "0 0 20px rgba(232, 123, 44, 0.35)",
+            color: "#ffffff",
+            background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%)",
+            boxShadow: "0 0 20px var(--accent-glow)",
             fontFamily: "Outfit, sans-serif",
           }}
         >
           {initials || "?"}
         </div>
         <div>
-          <p className="font-[Outfit] font-medium text-white">Profile picture</p>
-          <p className="text-sm text-[#888]">Auto-generated from your name initials</p>
+          <p className="font-[Outfit] font-medium" style={{ color: "var(--foreground)" }}>Profile picture</p>
+          <p className="text-sm text-[var(--muted)]">Auto-generated from your name initials</p>
         </div>
       </div>
 
@@ -194,22 +195,22 @@ function ProfileTab({ push }: { push: (msg: string, type: "success" | "error") =
       </div>
 
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-[#AAAAAA]">
+        <label className="mb-1.5 block text-sm font-medium text-[var(--muted)]">
           Email address
         </label>
         <div
           className="flex items-center gap-3 rounded-lg px-4 py-2.5"
-          style={{ background: "#131313", border: "1px solid rgba(255,255,255,0.07)" }}
+          style={{ background: "var(--card2)", border: "1px solid var(--border)" }}
         >
-          <span className="flex-1 text-sm text-[#888]">{email}</span>
+          <span className="flex-1 text-sm text-[var(--muted)]">{email}</span>
           <span
-            className="rounded-full px-2 py-0.5 text-xs text-[#888]"
-            style={{ background: "rgba(255,255,255,0.07)" }}
+            className="rounded-full px-2 py-0.5 text-xs text-[var(--muted)]"
+            style={{ background: "var(--surface2)" }}
           >
             Read only
           </span>
         </div>
-        <p className="mt-1.5 text-xs text-[#888]">
+        <p className="mt-1.5 text-xs text-[var(--muted)]">
           Email is managed by your sign-in provider.
         </p>
       </div>
@@ -218,8 +219,8 @@ function ProfileTab({ push }: { push: (msg: string, type: "success" | "error") =
         <button
           type="submit"
           disabled={saving}
-          className="relative overflow-hidden rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:shadow-lg hover:shadow-[#E87B2C]/25 disabled:opacity-60"
-          style={{ background: "#E87B2C", fontFamily: "Outfit, sans-serif" }}
+          className="relative overflow-hidden rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:shadow-lg disabled:opacity-60"
+          style={{ background: "var(--accent)", fontFamily: "Outfit, sans-serif" }}
         >
           {saving ? "Saving…" : "Save profile"}
         </button>
@@ -265,10 +266,10 @@ function SecurityTab({ push }: { push: (msg: string, type: "success" | "error") 
   return (
     <form onSubmit={handleSave} className="space-y-6">
       <div>
-        <h3 className="font-[Outfit] mb-1 text-base font-semibold text-white">
+        <h3 className="font-[Outfit] mb-1 text-base font-semibold" style={{ color: "var(--foreground)" }}>
           Change password
         </h3>
-        <p className="text-sm text-[#888]">
+        <p className="text-sm text-[var(--muted)]">
           Choose a strong password with at least 8 characters.
         </p>
       </div>
@@ -312,8 +313,8 @@ function SecurityTab({ push }: { push: (msg: string, type: "success" | "error") 
         <button
           type="submit"
           disabled={saving || !isValid}
-          className="rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:shadow-lg hover:shadow-[#E87B2C]/25 disabled:opacity-60"
-          style={{ background: "#E87B2C", fontFamily: "Outfit, sans-serif" }}
+          className="rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:shadow-lg disabled:opacity-60"
+          style={{ background: "var(--accent)", fontFamily: "Outfit, sans-serif" }}
         >
           {saving ? "Updating…" : "Update password"}
         </button>
@@ -356,7 +357,7 @@ function BusinessTab() {
       <div className="flex items-center justify-center py-16">
         <div
           className="h-7 w-7 animate-spin rounded-full border-2"
-          style={{ borderColor: "#E87B2C", borderTopColor: "transparent" }}
+          style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }}
         />
       </div>
     );
@@ -370,24 +371,24 @@ function BusinessTab() {
     return (
       <div
         className="flex flex-col items-center gap-4 rounded-xl py-14 text-center"
-        style={{ background: "#131313", border: "1px solid rgba(255,255,255,0.07)" }}
+        style={{ background: "var(--card2)", border: "1px solid var(--border)" }}
       >
         <div
           className="flex h-12 w-12 items-center justify-center rounded-xl text-2xl"
-          style={{ background: "rgba(232,123,44,0.1)", color: "#E87B2C" }}
+          style={{ background: "var(--accent-glow)", color: "var(--accent)" }}
         >
           📞
         </div>
         <div>
-          <p className="font-[Outfit] font-medium text-white">Voice Agent not configured</p>
-          <p className="mt-1 text-sm text-[#888]">
+          <p className="font-[Outfit] font-medium" style={{ color: "var(--foreground)" }}>Voice Agent not configured</p>
+          <p className="mt-1 text-sm text-[var(--muted)]">
             Complete the setup wizard to configure your Voice Agent.
           </p>
         </div>
         <Link
           href="/wizard"
-          className="mt-1 rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:shadow-lg hover:shadow-[#E87B2C]/25"
-          style={{ background: "#E87B2C", fontFamily: "Outfit, sans-serif" }}
+          className="mt-1 rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:shadow-lg"
+          style={{ background: "var(--accent)", fontFamily: "Outfit, sans-serif" }}
         >
           Start setup wizard
         </Link>
@@ -410,12 +411,12 @@ function BusinessTab() {
             {isLive && <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />}
             {isLive ? "Live" : "Draft"}
           </span>
-          <span className="text-sm text-[#888]">Voice Agent</span>
+          <span className="text-sm text-[var(--muted)]">Voice Agent</span>
         </div>
         <Link
           href="/wizard?reconfigure=true"
-          className="rounded-lg px-4 py-2 text-sm font-medium text-[#AAAAAA] transition-all duration-200 hover:text-[#E87B2C]"
-          style={{ border: "1px solid rgba(255,255,255,0.08)" }}
+          className="rounded-lg px-4 py-2 text-sm font-medium text-[var(--muted)] transition-all duration-200 hover:text-[var(--accent)]"
+          style={{ border: "1px solid var(--border2)" }}
         >
           Reconfigure →
         </Link>
@@ -428,10 +429,10 @@ function BusinessTab() {
         {b.phone && <InfoRow label="Phone" value={b.phone} />}
         {b.services && (
           <div className="pt-2">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-[#888]">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
               Services
             </p>
-            <p className="whitespace-pre-wrap text-sm text-[#AAAAAA]">{b.services}</p>
+            <p className="whitespace-pre-wrap text-sm text-[var(--muted)]">{b.services}</p>
           </div>
         )}
       </InfoSection>
@@ -452,8 +453,8 @@ function BusinessTab() {
               if (!sched) return null;
               return (
                 <div key={day} className="flex justify-between text-sm">
-                  <span className="w-28 text-[#888]">{DAY_LABELS[day]}</span>
-                  <span className="text-[#AAAAAA]">
+                  <span className="w-28 text-[var(--muted)]">{DAY_LABELS[day]}</span>
+                  <span className="text-[var(--muted)]">
                     {sched.closed ? "Closed" : `${sched.open} – ${sched.close}`}
                   </span>
                 </div>
@@ -470,9 +471,9 @@ function InfoSection({ title, children }: { title: string; children: React.React
   return (
     <div
       className="rounded-xl px-5 py-4 transition-all duration-200"
-      style={{ background: "#131313", border: "1px solid rgba(255,255,255,0.07)" }}
+      style={{ background: "var(--card2)", border: "1px solid var(--border)" }}
     >
-      <h4 className="mb-3 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[#E87B2C]/80">
+      <h4 className="mb-3 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
         {title}
       </h4>
       <div className="space-y-2">{children}</div>
@@ -483,8 +484,8 @@ function InfoSection({ title, children }: { title: string; children: React.React
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4 text-sm">
-      <span className="shrink-0 text-[#888]">{label}</span>
-      <span className="truncate text-right text-[#AAAAAA]">{value}</span>
+      <span className="shrink-0 text-[var(--muted)]">{label}</span>
+      <span className="truncate text-right text-[var(--muted)]">{value}</span>
     </div>
   );
 }
@@ -508,14 +509,14 @@ export default function SettingsPage() {
 
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-2xl">
-          <p className="mb-6 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[#E87B2C]">
+          <p className="mb-6 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[var(--accent)]">
             Account Settings
           </p>
 
           {/* Tab nav */}
           <div
             className="mb-6 flex gap-1 rounded-xl p-1"
-            style={{ background: "#131313", border: "1px solid rgba(255,255,255,0.07)" }}
+            style={{ background: "var(--card2)", border: "1px solid var(--border)" }}
           >
             {TABS.map((tab) => (
               <button
@@ -525,22 +526,22 @@ export default function SettingsPage() {
                 style={
                   activeTab === tab.id
                     ? {
-                        background: "#E87B2C",
-                        color: "white",
+                        background: "var(--accent)",
+                        color: "var(--foreground)",
                         boxShadow: "0 0 16px rgba(232,123,44,0.3)",
                         fontFamily: "Outfit, sans-serif",
                       }
-                    : { color: "#888", fontFamily: "Outfit, sans-serif" }
+                    : { color: "var(--muted)", fontFamily: "Outfit, sans-serif" }
                 }
                 onMouseEnter={(e) => {
                   if (activeTab !== tab.id) {
                     (e.currentTarget as HTMLElement).style.color = "white";
-                    (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)";
+                    (e.currentTarget as HTMLElement).style.background = "var(--surface2)";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (activeTab !== tab.id) {
-                    (e.currentTarget as HTMLElement).style.color = "#888";
+                    (e.currentTarget as HTMLElement).style.color = "var(--muted)";
                     (e.currentTarget as HTMLElement).style.background = "";
                   }
                 }}
@@ -553,7 +554,7 @@ export default function SettingsPage() {
           {/* Tab content */}
           <div
             className="rounded-xl p-5 sm:p-6"
-            style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.07)" }}
+            style={{ background: "var(--card)", border: "1px solid var(--border)" }}
           >
             {activeTab === "profile" && <ProfileTab push={push} />}
             {activeTab === "security" && <SecurityTab push={push} />}

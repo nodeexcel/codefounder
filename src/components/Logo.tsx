@@ -13,9 +13,9 @@ const sizeMap = {
 
 export function Logo({ href = "/", size = "md" }: LogoProps) {
   const content = (
-    <span className={`font-bold tracking-tight ${sizeMap[size]}`}>
-      <span className="text-white">Code</span>
-      <span className="text-[#f97316]">Founder</span>
+    <span className={`font-bold tracking-tight ${sizeMap[size]}`} style={{ fontFamily: "Outfit, sans-serif" }}>
+      <span style={{ color: "var(--foreground)" }}>Code</span>
+      <span style={{ color: "var(--primary)" }}>Founder</span>
     </span>
   );
 

@@ -1,12 +1,83 @@
 @import "tailwindcss";
 
+/* ── Design tokens ── */
 :root {
-  --background: #000000;
+  --accent: #FF7A1A;
+  --accent-dark: #D4601A;
+  --accent-light: #FF9B4A;
+  --accent-glow: rgba(255,122,26,0.12);
+  --accent-glow-s: rgba(255,122,26,0.40);
+}
+
+[data-theme="dark"] {
+  --cf-bg: #07090D;
+  --cf-bg2: #0D1117;
+  --cf-bg3: #161B22;
+  --cf-surf: rgba(255,255,255,.035);
+  --cf-surf2: rgba(255,255,255,.065);
+  --cf-bdr: rgba(255,255,255,.07);
+  --cf-bdr2: rgba(255,255,255,.12);
+  --cf-txt: #F8FAFC;
+  --cf-txt2: #94A3B8;
+  --cf-txt3: #64748B;
+}
+
+[data-theme="light"] {
+  --cf-bg: #FAF7F2;
+  --cf-bg2: #F5EFE4;
+  --cf-bg3: #EDE8DC;
+  --cf-surf: rgba(0,0,0,.025);
+  --cf-surf2: rgba(0,0,0,.05);
+  --cf-bdr: rgba(0,0,0,.07);
+  --cf-bdr2: rgba(0,0,0,.12);
+  --cf-txt: #0F172A;
+  --cf-txt2: #475569;
+  --cf-txt3: #94A3B8;
+}
+
+/* ── Dashboard tokens — theme-responsive ── */
+:root {
+  --primary: #FF7A1A;
+  --primary-hover: #D4601A;
+}
+
+[data-theme="dark"] {
+  --background: #09090B;
   --foreground: #ffffff;
-  --card: #111111;
-  --border: #222222;
-  --primary: #f97316;
-  --primary-hover: #ea580c;
+  --card: #111114;
+  --card2: #16161A;
+  --card-elevated: #1A1A1F;
+  --border: rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.10);
+  --surface: rgba(255,255,255,0.03);
+  --surface2: rgba(255,255,255,0.06);
+  --muted: rgba(255,255,255,0.42);
+  --muted-low: rgba(255,255,255,0.27);
+  --sidebar-bg: linear-gradient(180deg,#16161A 0%,#111114 100%);
+  --nav-bg: rgba(9,9,11,0.88);
+  --tooltip-bg: #1e1e24;
+}
+
+[data-theme="light"] {
+  --background: #f8f5f0;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card2: #f0ece4;
+  --card-elevated: #f7f3ec;
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.14);
+  --surface: rgba(0,0,0,0.025);
+  --surface2: rgba(0,0,0,0.05);
+  --muted: rgba(0,0,0,0.50);
+  --muted-low: rgba(0,0,0,0.35);
+  --sidebar-bg: linear-gradient(180deg,#ffffff 0%,#f5efe6 100%);
+  --nav-bg: rgba(248,245,240,0.90);
+  --tooltip-bg: #ffffff;
+}
+
+/* Light-mode overrides: ensure white-hardcoded text stays readable */
+[data-theme="light"] .text-white {
+  color: var(--foreground) !important;
 }
 
 @theme inline {
@@ -15,6 +86,7 @@
   --color-card: var(--card);
   --color-border: var(--border);
   --color-primary: var(--primary);
+  --color-accent: var(--accent);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -31,6 +103,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  transition: background 0.25s ease, color 0.25s ease;
 }
 
 ::selection {

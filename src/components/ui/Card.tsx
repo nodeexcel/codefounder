@@ -26,18 +26,21 @@ export function Card({
       className={[
         "group relative overflow-hidden rounded-xl transition-all duration-300",
         paddingMap[padding],
-        hover ? "hover:shadow-xl hover:shadow-[#E87B2C]/5 hover:-translate-y-0.5" : "",
+        hover ? "hover:shadow-xl hover:-translate-y-0.5" : "",
         className,
       ]
         .filter(Boolean)
         .join(" ")}
       style={{
-        background: "#1e1e1e",
-        border: "1px solid rgba(255,255,255,0.07)",
+        background: "var(--card)",
+        border: "1px solid var(--border)",
       }}
     >
       {(hover || accent) && (
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-[#E87B2C]/60 via-[#f59e0b]/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          style={{ background: "linear-gradient(90deg, var(--accent)/60, var(--accent-light)/30, transparent)" }}
+        />
       )}
       {children}
     </div>
@@ -56,13 +59,13 @@ export function CardHeader({ title, description, action, label }: CardHeaderProp
     <div className="mb-4 flex items-start justify-between gap-4">
       <div>
         {label && (
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[3px] text-[#E87B2C] font-[Outfit]">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[3px] font-[Outfit]" style={{ color: "var(--accent)" }}>
             {label}
           </p>
         )}
-        <h3 className="font-[Outfit] text-lg font-semibold text-white">{title}</h3>
+        <h3 className="font-[Outfit] text-lg font-semibold" style={{ color: "var(--foreground)" }}>{title}</h3>
         {description && (
-          <p className="mt-1 text-sm text-[#AAAAAA]">{description}</p>
+          <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>{description}</p>
         )}
       </div>
       {action}

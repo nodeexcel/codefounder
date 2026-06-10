@@ -47,7 +47,7 @@ export default async function AgentsPage() {
 
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="mb-6 flex items-center justify-between">
-          <p className="font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[#E87B2C]">
+          <p className="font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
             All Agents
           </p>
           <Button href="/wizard?new=true" variant="primary" size="sm">
@@ -72,28 +72,29 @@ export default async function AgentsPage() {
                   isComingSoon ? "opacity-60" : "hover:-translate-y-0.5",
                 ].join(" ")}
                 style={{
-                  background: "#161616",
+                  background: "var(--card)",
                   border: isLive
-                    ? "1px solid rgba(232,123,44,0.22)"
-                    : "1px solid rgba(255,255,255,0.07)",
-                  boxShadow: isLive ? "0 0 40px rgba(232, 123, 44, 0.05)" : undefined,
+                    ? "1px solid rgba(255,122,26,0.22)"
+                    : "1px solid var(--border)",
+                  boxShadow: isLive ? "0 0 40px rgba(255,122,26,0.05)" : undefined,
                 }}
               >
                 <div
                   className="pointer-events-none absolute inset-x-0 top-0 h-px transition-opacity duration-300"
                   style={{
-                    background: "linear-gradient(90deg, #E87B2C, #f59e0b, transparent)",
+                    background: "linear-gradient(90deg, var(--accent), var(--accent-light), transparent)",
                     opacity: isLive ? 0.6 : 0,
                   }}
                 />
                 <div
-                  className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-[#E87B2C]/50 via-[#f59e0b]/25 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                  className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                  style={{ background: "linear-gradient(90deg, var(--accent)/50, var(--accent-light)/25, transparent)" }}
                 />
 
                 {isLive && (
                   <div
                     className="pointer-events-none absolute -top-8 -right-8 h-32 w-32 rounded-full opacity-10"
-                    style={{ background: "radial-gradient(circle, #E87B2C 0%, transparent 70%)" }}
+                    style={{ background: "radial-gradient(circle, var(--accent) 0%, transparent 70%)" }}
                   />
                 )}
 
@@ -102,23 +103,23 @@ export default async function AgentsPage() {
                   <div
                     className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl"
                     style={{
-                      background: isLive ? "rgba(232,123,44,0.1)" : "rgba(255,255,255,0.05)",
+                      background: isLive ? "var(--accent-glow)" : "var(--surface2)",
                     }}
                   >
                     {agent.icon}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-[Outfit] text-lg font-semibold text-white">
+                      <h3 className="font-[Outfit] text-lg font-semibold" style={{ color: "var(--foreground)" }}>
                         {agent.name}
                       </h3>
                       {isComingSoon ? (
                         <span
                           className="rounded-full px-2.5 py-0.5 text-xs font-medium"
                           style={{
-                            background: "rgba(255,255,255,0.06)",
-                            color: "rgba(255,255,255,0.4)",
-                            border: "1px solid rgba(255,255,255,0.08)",
+                            background: "var(--surface2)",
+                            color: "var(--muted)",
+                            border: "1px solid var(--border2)",
                           }}
                         >
                           Soon
@@ -132,16 +133,16 @@ export default async function AgentsPage() {
                         <span
                           className="rounded-full px-2.5 py-0.5 text-xs font-medium"
                           style={{
-                            background: "rgba(255,255,255,0.06)",
-                            color: "rgba(255,255,255,0.4)",
-                            border: "1px solid rgba(255,255,255,0.08)",
+                            background: "var(--surface2)",
+                            color: "var(--muted)",
+                            border: "1px solid var(--border)",
                           }}
                         >
                           Not set up
                         </span>
                       )}
                     </div>
-                    <p className="mt-1 text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.5)" }}>
+                    <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--muted)" }}>
                       {agent.description}
                     </p>
                   </div>
@@ -151,38 +152,38 @@ export default async function AgentsPage() {
                 {isLive && (
                   <div
                     className="mt-4 rounded-xl px-4 py-3"
-                    style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+                    style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                   >
                     <dl className="space-y-1.5 text-sm">
                       {business.businessName && (
                         <div className="flex justify-between gap-4">
-                          <dt style={{ color: "rgba(255,255,255,0.4)" }}>Business</dt>
-                          <dd className="truncate text-right font-medium text-white">{business.businessName}</dd>
+                          <dt style={{ color: "var(--muted)" }}>Business</dt>
+                          <dd className="truncate text-right font-medium" style={{ color: "var(--foreground)" }}>{business.businessName}</dd>
                         </div>
                       )}
                       {voice.agentName && (
                         <div className="flex justify-between gap-4">
-                          <dt style={{ color: "rgba(255,255,255,0.4)" }}>Agent</dt>
-                          <dd className="font-medium text-white">{voice.agentName}</dd>
+                          <dt style={{ color: "var(--muted)" }}>Agent</dt>
+                          <dd className="font-medium" style={{ color: "var(--foreground)" }}>{voice.agentName}</dd>
                         </div>
                       )}
                       {voice.tone && (
                         <div className="flex justify-between gap-4">
-                          <dt style={{ color: "rgba(255,255,255,0.4)" }}>Tone</dt>
-                          <dd className="font-medium text-white">{voice.tone}</dd>
+                          <dt style={{ color: "var(--muted)" }}>Tone</dt>
+                          <dd className="font-medium" style={{ color: "var(--foreground)" }}>{voice.tone}</dd>
                         </div>
                       )}
                       {agent.id === "voice" && (
                         <>
-                          <div className="my-1.5" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }} />
+                          <div className="my-1.5" style={{ borderTop: "1px solid var(--border)" }} />
                           <div className="flex justify-between gap-4">
-                            <dt style={{ color: "rgba(255,255,255,0.4)" }}>Total calls</dt>
-                            <dd className="font-semibold text-[#E87B2C]">{totalCalls ?? 0}</dd>
+                            <dt style={{ color: "var(--muted)" }}>Total calls</dt>
+                            <dd className="font-semibold" style={{ color: "var(--accent)" }}>{totalCalls ?? 0}</dd>
                           </div>
                           {lastCall?.created_at && (
                             <div className="flex justify-between gap-4">
-                              <dt style={{ color: "rgba(255,255,255,0.4)" }}>Last call</dt>
-                              <dd className="font-medium text-white">{timeAgo(lastCall.created_at)}</dd>
+                              <dt style={{ color: "var(--muted)" }}>Last call</dt>
+                              <dd className="font-medium" style={{ color: "var(--foreground)" }}>{timeAgo(lastCall.created_at)}</dd>
                             </div>
                           )}
                         </>
@@ -198,9 +199,9 @@ export default async function AgentsPage() {
                       key={feature}
                       className="rounded-md px-2.5 py-1 text-xs"
                       style={{
-                        background: "rgba(255,255,255,0.04)",
-                        border: "1px solid rgba(255,255,255,0.07)",
-                        color: "rgba(255,255,255,0.45)",
+                        background: "var(--surface)",
+                        border: "1px solid var(--border)",
+                        color: "var(--muted)",
                       }}
                     >
                       {feature}

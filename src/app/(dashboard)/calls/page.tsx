@@ -27,18 +27,6 @@ function formatDateTime(dateStr: string): string {
   });
 }
 
-const inputStyle: React.CSSProperties = {
-  background: "#1e1e1e",
-  border: "1px solid rgba(255,255,255,0.08)",
-  color: "white",
-  borderRadius: "8px",
-  padding: "10px 16px",
-  fontSize: "14px",
-  outline: "none",
-  transition: "border-color 0.2s",
-  width: "100%",
-};
-
 export default function CallsPage() {
   const [calls, setCalls] = useState<CallLog[]>([]);
   const [total, setTotal] = useState(0);
@@ -128,7 +116,7 @@ export default function CallsPage() {
       />
 
       <div className="p-4 sm:p-6 lg:p-8">
-        <p className="mb-6 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[#E87B2C]">
+        <p className="mb-6 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
           Call History
         </p>
 
@@ -139,32 +127,40 @@ export default function CallsPage() {
             placeholder="Search by caller name or number…"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
+            className="flex-1 rounded-lg px-4 py-2.5 text-sm outline-none transition-all"
             style={{
-              ...inputStyle,
-              background: "#161616",
-              border: "1px solid rgba(255,255,255,0.08)",
+              background: "var(--card)",
+              border: "1px solid var(--border)",
+              color: "var(--foreground)",
             }}
-            className="flex-1 placeholder-[#555] focus:border-[#E87B2C]/50"
-            onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(232,123,44,0.5)")}
-            onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(255,122,26,0.5)")}
+            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
           />
           <input
             type="date"
             value={dateFilter}
             onChange={(e) => handleDateChange(e.target.value)}
-            style={{ ...inputStyle, background: "#161616", border: "1px solid rgba(255,255,255,0.08)", width: "auto", colorScheme: "dark" }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(232,123,44,0.5)")}
-            onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
+            className="rounded-lg px-4 py-2.5 text-sm outline-none transition-all"
+            style={{
+              background: "var(--card)",
+              border: "1px solid var(--border)",
+              color: "var(--foreground)",
+              colorScheme: "dark",
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(255,122,26,0.5)")}
+            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
           />
           {dateFilter && (
             <button
               onClick={() => handleDateChange("")}
-              className="rounded-lg px-4 py-2.5 text-sm transition-all duration-200 hover:text-white"
+              className="rounded-lg px-4 py-2.5 text-sm transition-all duration-200"
               style={{
-                background: "#161616",
-                border: "1px solid rgba(255,255,255,0.08)",
-                color: "rgba(255,255,255,0.4)",
+                background: "var(--card)",
+                border: "1px solid var(--border)",
+                color: "var(--muted)",
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--foreground)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--muted)")}
             >
               Clear
             </button>
@@ -172,7 +168,7 @@ export default function CallsPage() {
         </div>
 
         {!loading && total > 0 && (
-          <p className="mb-4 text-sm text-[#888]">
+          <p className="mb-4 text-sm" style={{ color: "var(--muted)" }}>
             {total} call{total !== 1 ? "s" : ""} total
           </p>
         )}
@@ -182,7 +178,7 @@ export default function CallsPage() {
           <div className="flex items-center justify-center py-20">
             <div
               className="h-8 w-8 animate-spin rounded-full border-2"
-              style={{ borderColor: "#E87B2C", borderTopColor: "transparent" }}
+              style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }}
             />
           </div>
         )}
@@ -191,19 +187,19 @@ export default function CallsPage() {
         {!loading && calls.length === 0 && (
           <div
             className="flex flex-col items-center gap-4 rounded-2xl py-20 text-center"
-            style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.07)" }}
+            style={{ background: "var(--card)", border: "1px solid var(--border)" }}
           >
             <div
               className="flex h-12 w-12 items-center justify-center rounded-xl"
-              style={{ background: "rgba(232,123,44,0.08)", color: "#E87B2C" }}
+              style={{ background: "var(--accent-glow)", color: "var(--accent)" }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.15 12 19.79 19.79 0 0 1 1.08 3.4 2 2 0 0 1 3.05 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16z" />
               </svg>
             </div>
             <div>
-              <p className="font-[Outfit] text-lg font-medium text-white">No calls yet</p>
-              <p className="mt-1 text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
+              <p className="font-[Outfit] text-lg font-medium" style={{ color: "var(--foreground)" }}>No calls yet</p>
+              <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
                 {search || dateFilter
                   ? "No calls match your filters."
                   : "Your Voice Agent calls will appear here."}
@@ -222,36 +218,38 @@ export default function CallsPage() {
                   key={call.id}
                   className="overflow-hidden rounded-xl transition-all duration-200"
                   style={{
-                    background: "#161616",
+                    background: "var(--card)",
                     border: expanded
-                      ? "1px solid rgba(232,123,44,0.25)"
-                      : "1px solid rgba(255,255,255,0.07)",
-                    boxShadow: expanded ? "0 4px 20px rgba(232,123,44,0.05)" : undefined,
+                      ? "1px solid rgba(255,122,26,0.25)"
+                      : "1px solid var(--border)",
+                    boxShadow: expanded ? "0 4px 20px rgba(255,122,26,0.05)" : undefined,
                   }}
                 >
                   {/* Summary row */}
                   <button
                     onClick={() => toggleExpand(call.id)}
-                    className="w-full px-4 py-4 text-left transition-colors duration-150 hover:bg-white/[0.02]"
+                    className="w-full px-4 py-4 text-left transition-colors duration-150"
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                   >
                     <div className="flex items-center gap-4">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium text-white">
+                        <p className="truncate font-medium" style={{ color: "var(--foreground)" }}>
                           {call.caller_number ?? "Web Call"}
                         </p>
-                        <p className="mt-0.5 text-xs text-[#888]">
+                        <p className="mt-0.5 text-xs" style={{ color: "var(--muted)" }}>
                           {formatDateTime(call.created_at)}
                         </p>
                       </div>
 
                       {call.transcript && (
-                        <p className="hidden max-w-[260px] flex-1 truncate text-xs text-[#888] xl:block">
+                        <p className="hidden max-w-[260px] flex-1 truncate text-xs xl:block" style={{ color: "var(--muted)" }}>
                           {call.transcript.slice(0, 100)}
                         </p>
                       )}
 
                       <div className="flex shrink-0 items-center gap-3">
-                        <span className="text-sm tabular-nums text-[#AAAAAA]">
+                        <span className="text-sm tabular-nums" style={{ color: "var(--muted)" }}>
                           {call.duration != null ? formatDuration(call.duration) : "—"}
                         </span>
                         <span
@@ -266,15 +264,19 @@ export default function CallsPage() {
                         </span>
                         {call.recording_url && (
                           <span
-                            className="hidden rounded-full px-2.5 py-0.5 text-xs font-medium text-[#E87B2C] sm:inline"
-                            style={{ background: "rgba(232,123,44,0.1)" }}
+                            className="hidden rounded-full px-2.5 py-0.5 text-xs font-medium sm:inline"
+                            style={{ background: "var(--accent-glow)", color: "var(--accent)" }}
                           >
                             Recording
                           </span>
                         )}
                         <span
-                          className="text-sm text-[#888] transition-transform duration-300"
-                          style={{ display: "inline-block", transform: expanded ? "rotate(180deg)" : undefined }}
+                          className="text-sm transition-transform duration-300"
+                          style={{
+                            display: "inline-block",
+                            transform: expanded ? "rotate(180deg)" : undefined,
+                            color: "var(--muted)",
+                          }}
                         >
                           ▾
                         </span>
@@ -287,33 +289,33 @@ export default function CallsPage() {
                     <div
                       className="space-y-5 px-4 py-5"
                       style={{
-                        borderTop: "1px solid rgba(255,255,255,0.07)",
-                        background: "#1a1a1a",
+                        borderTop: "1px solid var(--border)",
+                        background: "var(--card-elevated)",
                       }}
                     >
                       {call.recording_url && (
                         <div>
-                          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#888]">
+                          <p className="mb-2 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted)" }}>
                             Recording
                           </p>
                           <audio
                             controls
                             src={call.recording_url}
                             className="h-10 w-full rounded-lg"
-                            style={{ accentColor: "#E87B2C" }}
+                            style={{ accentColor: "var(--accent)" }}
                           />
                         </div>
                       )}
                       <div>
-                        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#888]">
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted)" }}>
                           Transcript
                         </p>
                         {call.transcript ? (
-                          <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#AAAAAA]">
+                          <p className="whitespace-pre-wrap text-sm leading-relaxed" style={{ color: "var(--muted)" }}>
                             {call.transcript}
                           </p>
                         ) : (
-                          <p className="text-sm text-[#888]">No transcript available.</p>
+                          <p className="text-sm" style={{ color: "var(--muted)" }}>No transcript available.</p>
                         )}
                       </div>
                     </div>
@@ -327,7 +329,7 @@ export default function CallsPage() {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="mt-6 flex items-center justify-between">
-            <p className="text-sm text-[#888]">
+            <p className="text-sm" style={{ color: "var(--muted)" }}>
               Showing {page * PAGE_SIZE + 1}–
               {Math.min((page + 1) * PAGE_SIZE, total)} of {total}
             </p>
@@ -335,16 +337,28 @@ export default function CallsPage() {
               <button
                 onClick={() => setPage((p) => p - 1)}
                 disabled={page === 0}
-                className="rounded-lg px-4 py-2 text-sm text-[#888] transition-all duration-200 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                style={{ background: "#1e1e1e", border: "1px solid rgba(255,255,255,0.08)" }}
+                className="rounded-lg px-4 py-2 text-sm transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40"
+                style={{
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
+                  color: "var(--muted)",
+                }}
+                onMouseEnter={(e) => { if (page > 0) (e.currentTarget as HTMLElement).style.color = "var(--foreground)"; }}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--muted)")}
               >
                 ← Previous
               </button>
               <button
                 onClick={() => setPage((p) => p + 1)}
                 disabled={page >= totalPages - 1}
-                className="rounded-lg px-4 py-2 text-sm text-[#888] transition-all duration-200 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                style={{ background: "#1e1e1e", border: "1px solid rgba(255,255,255,0.08)" }}
+                className="rounded-lg px-4 py-2 text-sm transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40"
+                style={{
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
+                  color: "var(--muted)",
+                }}
+                onMouseEnter={(e) => { if (page < totalPages - 1) (e.currentTarget as HTMLElement).style.color = "var(--foreground)"; }}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--muted)")}
               >
                 Next →
               </button>

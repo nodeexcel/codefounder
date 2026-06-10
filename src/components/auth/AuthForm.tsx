@@ -295,16 +295,16 @@ export function AuthForm({ mode }: AuthFormProps) {
           50% { opacity: 1; transform: scale(1); }
         }
         @keyframes authGlowPulse {
-          0%, 100% { box-shadow: 0 0 40px rgba(232,123,44,0.1), 0 24px 80px rgba(0,0,0,0.65); }
-          50% { box-shadow: 0 0 80px rgba(232,123,44,0.2), 0 24px 80px rgba(0,0,0,0.65); }
+          0%, 100% { box-shadow: 0 0 40px rgba(255,122,26,0.1), 0 24px 80px rgba(0,0,0,0.65); }
+          50% { box-shadow: 0 0 80px rgba(255,122,26,0.2), 0 24px 80px rgba(0,0,0,0.65); }
         }
         .auth-card {
           animation: authCardIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both,
                      authGlowPulse 4s ease-in-out 0.7s infinite;
         }
         .auth-google-btn:hover:not(:disabled) {
-          border-color: rgba(232,123,44,0.4) !important;
-          background: #222 !important;
+          border-color: rgba(255,122,26,0.4) !important;
+          background: var(--card-elevated) !important;
         }
         .auth-submit-btn {
           position: relative;
@@ -323,20 +323,20 @@ export function AuthForm({ mode }: AuthFormProps) {
         }
         .auth-submit-btn:hover:not(:disabled) {
           background: linear-gradient(135deg, #f08a3c, #d46c1c) !important;
-          box-shadow: 0 6px 28px rgba(232,123,44,0.5) !important;
+          box-shadow: 0 6px 28px rgba(255,122,26,0.5) !important;
           transform: translateY(-1px);
         }
         .auth-submit-btn:active:not(:disabled) {
           transform: translateY(0);
         }
-        .auth-forgot:hover { color: #E87B2C !important; }
-        .auth-switch-link:hover { color: #F5A55A !important; text-decoration: underline; }
+        .auth-forgot:hover { color: #FF7A1A !important; }
+        .auth-switch-link:hover { color: #FF9B4A !important; text-decoration: underline; }
       `}</style>
 
       <div style={{
         position: "relative",
         minHeight: "100vh",
-        background: "#0a0a0a",
+        background: "var(--background)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -361,7 +361,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         <div style={{
           position: "absolute",
           inset: 0,
-          background: "radial-gradient(ellipse 70% 50% at 50% 50%, rgba(232,123,44,0.07) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse 70% 50% at 50% 50%, rgba(255,122,26,0.07) 0%, transparent 70%)",
           pointerEvents: "none",
         }} />
 
@@ -370,7 +370,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           position: "absolute",
           width: "560px",
           height: "300px",
-          background: "radial-gradient(ellipse at center, rgba(232,123,44,0.18) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse at center, rgba(255,122,26,0.18) 0%, transparent 70%)",
           borderRadius: "50%",
           top: "50%",
           left: "50%",
@@ -381,12 +381,12 @@ export function AuthForm({ mode }: AuthFormProps) {
 
         {/* Spark particles */}
         {[
-          { w: 3, h: 3, c: "#E87B2C", t: "22%", l: "8%", dur: "4s", del: "0s", shadow: "0 0 6px 2px rgba(232,123,44,0.8)" },
-          { w: 2, h: 2, c: "#F5A55A", t: "68%", l: "13%", dur: "5s", del: "0.7s", shadow: "0 0 4px 2px rgba(245,165,90,0.7)" },
-          { w: 4, h: 4, c: "#E87B2C", t: "38%", l: "6%", dur: "3.5s", del: "1.2s", shadow: "0 0 8px 3px rgba(232,123,44,0.6)" },
-          { w: 3, h: 3, c: "#F5A55A", t: "18%", l: "83%", dur: "4.5s", del: "2s", shadow: "0 0 6px 2px rgba(245,165,90,0.8)" },
-          { w: 2, h: 2, c: "#E87B2C", t: "62%", l: "88%", dur: "3s", del: "0.5s", shadow: "0 0 4px 2px rgba(232,123,44,0.7)" },
-          { w: 3, h: 3, c: "#E87B2C", t: "78%", l: "75%", dur: "4s", del: "2.5s", shadow: "0 0 6px 2px rgba(232,123,44,0.9)" },
+          { w: 3, h: 3, c: "#FF7A1A", t: "22%", l: "8%", dur: "4s", del: "0s", shadow: "0 0 6px 2px rgba(255,122,26,0.8)" },
+          { w: 2, h: 2, c: "#FF9B4A", t: "68%", l: "13%", dur: "5s", del: "0.7s", shadow: "0 0 4px 2px rgba(245,165,90,0.7)" },
+          { w: 4, h: 4, c: "#FF7A1A", t: "38%", l: "6%", dur: "3.5s", del: "1.2s", shadow: "0 0 8px 3px rgba(255,122,26,0.6)" },
+          { w: 3, h: 3, c: "#FF9B4A", t: "18%", l: "83%", dur: "4.5s", del: "2s", shadow: "0 0 6px 2px rgba(245,165,90,0.8)" },
+          { w: 2, h: 2, c: "#FF7A1A", t: "62%", l: "88%", dur: "3s", del: "0.5s", shadow: "0 0 4px 2px rgba(255,122,26,0.7)" },
+          { w: 3, h: 3, c: "#FF7A1A", t: "78%", l: "75%", dur: "4s", del: "2.5s", shadow: "0 0 6px 2px rgba(255,122,26,0.9)" },
         ].map((s, i) => (
           <div key={i} style={{
             position: "absolute",
@@ -424,8 +424,8 @@ export function AuthForm({ mode }: AuthFormProps) {
           position: "relative",
           width: "100%",
           maxWidth: "440px",
-          background: "#111111",
-          border: "1px solid rgba(255,255,255,0.08)",
+          background: "var(--card)",
+          border: "1px solid var(--border2)",
           borderRadius: "20px",
           padding: "40px",
           zIndex: 10,
@@ -437,7 +437,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             left: 0,
             right: 0,
             height: "1px",
-            background: "linear-gradient(90deg, rgba(232,123,44,0.8) 0%, rgba(245,165,90,0.4) 50%, transparent 100%)",
+            background: "linear-gradient(90deg, rgba(255,122,26,0.8) 0%, rgba(245,165,90,0.4) 50%, transparent 100%)",
             borderRadius: "20px 20px 0 0",
           }} />
 
@@ -469,9 +469,9 @@ export function AuthForm({ mode }: AuthFormProps) {
               display: "inline-flex",
               alignItems: "center",
               gap: "8px",
-              background: "rgba(232,123,44,0.1)",
-              border: "1px solid rgba(232,123,44,0.25)",
-              color: "#F5A55A",
+              background: "rgba(255,122,26,0.1)",
+              border: "1px solid rgba(255,122,26,0.25)",
+              color: "#FF9B4A",
               padding: "4px 14px",
               borderRadius: "100px",
               fontSize: "11px",
@@ -480,7 +480,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               textTransform: "uppercase" as const,
               marginBottom: "14px",
             }}>
-              <span style={{ width: "6px", height: "6px", background: "#E87B2C", borderRadius: "50%", display: "inline-block", flexShrink: 0 }} />
+              <span style={{ width: "6px", height: "6px", background: "#FF7A1A", borderRadius: "50%", display: "inline-block", flexShrink: 0 }} />
               {isLogin ? "Secure Login" : "Get Started Free"}
             </div>
             <h1 style={{
@@ -513,7 +513,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               justifyContent: "center",
               gap: "10px",
               padding: "12px 20px",
-              background: "#181818",
+              background: "var(--card-elevated)",
               border: "1px solid rgba(255,255,255,0.1)",
               borderRadius: "10px",
               color: "#ffffff",
@@ -538,7 +538,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              background: "#111111",
+              background: "var(--card)",
               padding: "0 12px",
               fontSize: "11px",
               textTransform: "uppercase" as const,
@@ -672,11 +672,11 @@ export function AuthForm({ mode }: AuthFormProps) {
                         border: termsTouched && !termsAccepted
                           ? "1.5px solid rgba(239,68,68,0.6)"
                           : termsAccepted
-                            ? "1.5px solid #E87B2C"
+                            ? "1.5px solid #FF7A1A"
                             : "1.5px solid rgba(255,255,255,0.15)",
                         borderRadius: "4px",
                         background: termsAccepted
-                          ? "rgba(232,123,44,0.15)"
+                          ? "rgba(255,122,26,0.15)"
                           : "rgba(255,255,255,0.04)",
                         cursor: loading ? "not-allowed" : "pointer",
                         transition: "all 0.2s",
@@ -687,7 +687,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                       <svg
                         viewBox="0 0 24 24"
                         fill="none"
-                        stroke="#E87B2C"
+                        stroke="#FF7A1A"
                         strokeWidth="3"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -711,7 +711,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      style={{ color: "#E87B2C", textDecoration: "underline" }}
+                      style={{ color: "#FF7A1A", textDecoration: "underline" }}
                     >
                       Terms of Service
                     </a>
@@ -721,7 +721,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      style={{ color: "#E87B2C", textDecoration: "underline" }}
+                      style={{ color: "#FF7A1A", textDecoration: "underline" }}
                     >
                       Privacy Policy
                     </a>
@@ -731,7 +731,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      style={{ color: "#E87B2C", textDecoration: "underline" }}
+                      style={{ color: "#FF7A1A", textDecoration: "underline" }}
                     >
                       Acceptable Use Policy
                     </a>
@@ -780,7 +780,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               style={{
                 width: "100%",
                 padding: "13px 20px",
-                background: "linear-gradient(135deg, #E87B2C 0%, #C4611A 100%)",
+                background: "linear-gradient(135deg, #FF7A1A 0%, #C4611A 100%)",
                 border: "none",
                 borderRadius: "10px",
                 color: "#ffffff",
@@ -789,7 +789,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 fontWeight: 600,
                 cursor: loading || !formValid ? "not-allowed" : "pointer",
                 opacity: loading || !formValid ? 0.55 : 1,
-                boxShadow: "0 4px 20px rgba(232,123,44,0.28)",
+                boxShadow: "0 4px 20px rgba(255,122,26,0.28)",
                 transition: "all 0.2s",
                 marginTop: "4px",
               }}
@@ -825,7 +825,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             <Link
               href={isLogin ? "/signup" : "/login"}
               className="auth-switch-link"
-              style={{ fontWeight: 600, color: "#E87B2C", textDecoration: "none", transition: "color 0.2s" }}
+              style={{ fontWeight: 600, color: "#FF7A1A", textDecoration: "none", transition: "color 0.2s" }}
             >
               {isLogin ? "Sign up" : "Sign in"}
             </Link>

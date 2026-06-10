@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 
-type PlanKey = "starter" | "growth" | "pro";
+type PlanKey = "starter" | "pro" | "elite";
 
 const PLANS: Array<{
   key: PlanKey;
@@ -16,7 +16,7 @@ const PLANS: Array<{
   {
     key: "starter",
     name: "Starter",
-    price: 29,
+    price: 149,
     description: "Best for early-stage teams launching their first AI workflows.",
     features: [
       "1 active AI agent",
@@ -27,9 +27,9 @@ const PLANS: Array<{
     ],
   },
   {
-    key: "growth",
-    name: "Growth",
-    price: 79,
+    key: "pro",
+    name: "Pro",
+    price: 299,
     description: "For growing businesses scaling automation across teams.",
     features: [
       "3 active AI agents",
@@ -41,9 +41,9 @@ const PLANS: Array<{
     highlighted: true,
   },
   {
-    key: "pro",
-    name: "Pro",
-    price: 199,
+    key: "elite",
+    name: "Elite",
+    price: 599,
     description: "For high-volume operations needing full automation coverage.",
     features: [
       "10 active AI agents",

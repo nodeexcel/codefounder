@@ -25,9 +25,9 @@ import {
 
 const selectStyle: React.CSSProperties = {
   width: "100%",
-  background: "#1a1a1a",
-  border: "1px solid rgba(255,255,255,0.08)",
-  color: "white",
+  background: "var(--card-elevated)",
+  border: "1px solid var(--border2)",
+  color: "var(--foreground)",
   padding: "10px 16px",
   borderRadius: "8px",
   fontSize: "14px",
@@ -37,9 +37,9 @@ const selectStyle: React.CSSProperties = {
 
 const textareaStyle: React.CSSProperties = {
   width: "100%",
-  background: "#1a1a1a",
-  border: "1px solid rgba(255,255,255,0.08)",
-  color: "white",
+  background: "var(--card-elevated)",
+  border: "1px solid var(--border2)",
+  color: "var(--foreground)",
   padding: "10px 16px",
   borderRadius: "8px",
   fontSize: "14px",
@@ -50,7 +50,7 @@ const textareaStyle: React.CSSProperties = {
 
 const timeInputStyle: React.CSSProperties = {
   background: "#242424",
-  border: "1px solid rgba(255,255,255,0.08)",
+  border: "1px solid var(--border2)",
   color: "white",
   padding: "4px 8px",
   borderRadius: "6px",
@@ -86,6 +86,7 @@ function WizardContent() {
   const [userId, setUserId] = useState<string | null>(null);
   const [calendarChecking, setCalendarChecking] = useState(false);
   const [testCallActive, setTestCallActive] = useState(false);
+  const [testCallConnecting, setTestCallConnecting] = useState(false);
   const [provisioning, setProvisioning] = useState(false);
   const [vapiPhoneNumberId, setVapiPhoneNumberId] = useState<string | null>(null);
   const vapiRef = useRef<import("@vapi-ai/web").default | null>(null);
@@ -338,6 +339,11 @@ function WizardContent() {
       return;
     }
 
+    if (testCallConnecting) return;
+
+    setSaveError(null);
+    setTestCallConnecting(true);
+
     const { data: sessionRow } = await supabase
       .from("agent_wizard_sessions")
       .select("vapi_assistant_id")
@@ -349,7 +355,8 @@ function WizardContent() {
       ?.vapi_assistant_id;
 
     if (!assistantId) {
-      setSaveError("No assistant found. Click 'Go Live' first to create the assistant.");
+      setSaveError("No assistant found. Click 'Go Live' first to create your assistant.");
+      setTestCallConnecting(false);
       return;
     }
 
@@ -357,12 +364,21 @@ function WizardContent() {
       const Vapi = (await import("@vapi-ai/web")).default;
       const vapi = new Vapi(publicKey);
       vapiRef.current = vapi;
-      vapi.on("call-end", () => setTestCallActive(false));
-      vapi.on("error", () => setTestCallActive(false));
+      vapi.on("call-end", () => {
+        setTestCallActive(false);
+        setTestCallConnecting(false);
+      });
+      vapi.on("error", (err: unknown) => {
+        setTestCallActive(false);
+        setTestCallConnecting(false);
+        setSaveError(err instanceof Error ? err.message : "Test call encountered an error.");
+      });
       await vapi.start(assistantId);
+      setTestCallConnecting(false);
       setTestCallActive(true);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Failed to start test call");
+      setTestCallConnecting(false);
+      setSaveError(err instanceof Error ? err.message : "Failed to start test call.");
     }
   }
 
@@ -378,7 +394,7 @@ function WizardContent() {
         <div className="flex min-h-[50vh] items-center justify-center gap-3 text-[#888]">
           <div
             className="h-6 w-6 animate-spin rounded-full border-2"
-            style={{ borderColor: "#E87B2C", borderTopColor: "transparent" }}
+            style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }}
           />
           Loading your progress...
         </div>
@@ -394,14 +410,14 @@ function WizardContent() {
           <div
             className="relative w-full max-w-md overflow-hidden rounded-xl p-8 text-center"
             style={{
-              background: "#1e1e1e",
-              border: "1px solid rgba(232,123,44,0.3)",
+              background: "var(--card-elevated)",
+              border: "1px solid rgba(255,122,26,0.3)",
               boxShadow: "0 0 40px rgba(232, 123, 44, 0.08)",
             }}
           >
             <div
               className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-80"
-              style={{ background: "linear-gradient(90deg, #E87B2C, #f59e0b, transparent)" }}
+              style={{ background: "linear-gradient(90deg, var(--accent), var(--accent-light), transparent)" }}
             />
             <div
               className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full text-3xl"
@@ -418,10 +434,10 @@ function WizardContent() {
             {launchSummary?.phoneNumber && (
               <div
                 className="mt-4 rounded-lg px-4 py-3"
-                style={{ background: "rgba(232,123,44,0.07)", border: "1px solid rgba(232,123,44,0.2)" }}
+                style={{ background: "rgba(255,122,26,0.07)", border: "1px solid rgba(255,122,26,0.2)" }}
               >
                 <p className="text-xs text-[#888]">Assigned phone number</p>
-                <p className="mt-1 font-[Outfit] text-lg font-bold text-[#E87B2C]">
+                <p className="mt-1 font-[Outfit] text-lg font-bold text-[var(--accent)]">
                   {launchSummary.phoneNumber}
                 </p>
               </div>
@@ -444,7 +460,7 @@ function WizardContent() {
       />
 
       <div className="mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
-        <p className="mb-6 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[#E87B2C]">
+        <p className="mb-6 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[var(--accent)]">
           Agent Configuration
         </p>
 
@@ -452,7 +468,7 @@ function WizardContent() {
         <div className="mb-8">
           <div className="mb-3 flex items-center justify-between text-sm">
             <span className="text-[#888]">Progress</span>
-            <span className="font-[Outfit] font-semibold text-[#E87B2C]">
+            <span className="font-[Outfit] font-semibold text-[var(--accent)]">
               {Math.round(((step + 1) / WIZARD_STEPS.length) * 100)}%
             </span>
           </div>
@@ -464,17 +480,17 @@ function WizardContent() {
                   className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-all duration-300"
                   style={
                     i === step
-                      ? { background: "#E87B2C", color: "white", boxShadow: "0 0 16px rgba(232,123,44,0.5)" }
+                      ? { background: "var(--accent)", color: "white", boxShadow: "0 0 16px rgba(255,122,26,0.5)" }
                       : i < step
-                        ? { background: "#E87B2C", color: "white", boxShadow: "0 0 8px rgba(232,123,44,0.2)" }
-                        : { background: "rgba(255,255,255,0.06)", color: "#888" }
+                        ? { background: "var(--accent)", color: "white", boxShadow: "0 0 8px rgba(255,122,26,0.2)" }
+                        : { background: "var(--surface2)", color: "var(--muted)" }
                   }
                 >
                   {i < step ? "✓" : i + 1}
                 </div>
                 <span
                   className="mt-2 hidden text-center text-[10px] leading-tight font-[Outfit] transition-colors duration-300 sm:block sm:text-[11px]"
-                  style={{ color: i <= step ? "#E87B2C" : "#888" }}
+                  style={{ color: i <= step ? "var(--accent)" : "var(--muted)" }}
                 >
                   {label}
                 </span>
@@ -484,13 +500,13 @@ function WizardContent() {
 
           <div
             className="mt-4 h-1.5 overflow-hidden rounded-full"
-            style={{ background: "rgba(255,255,255,0.06)" }}
+            style={{ background: "var(--surface2)" }}
           >
             <div
               className="h-full rounded-full transition-all duration-500 ease-out"
               style={{
                 width: `${((step + 1) / WIZARD_STEPS.length) * 100}%`,
-                background: "linear-gradient(90deg, #E87B2C, #f59e0b)",
+                background: "linear-gradient(90deg, var(--accent), var(--accent-light))",
                 boxShadow: "0 0 8px rgba(232, 123, 44, 0.5)",
               }}
             />
@@ -505,7 +521,7 @@ function WizardContent() {
 
         <div
           className="relative overflow-hidden rounded-xl p-6 sm:p-8"
-          style={{ background: "#1e1e1e", border: "1px solid rgba(255,255,255,0.07)" }}
+          style={{ background: "var(--card-elevated)", border: "1px solid var(--border)" }}
         >
           {/* ── Step 0 — Choose Agent ─────────────────────────────────────────── */}
           {step === 0 && (
@@ -528,21 +544,21 @@ function WizardContent() {
                       onClick={() => selectAgent(agent.id)}
                       className="relative rounded-xl p-4 text-left transition-all duration-200"
                       style={{
-                        background: selected ? "rgba(232,123,44,0.05)" : "#1a1a1a",
+                        background: selected ? "var(--accent-glow)" : "var(--card-elevated)",
                         border: selected
-                          ? "1px solid #E87B2C"
-                          : "1px solid rgba(255,255,255,0.08)",
+                          ? "1px solid var(--accent)"
+                          : "1px solid var(--border2)",
                         cursor: available ? "pointer" : "not-allowed",
                         opacity: available ? 1 : 0.6,
                         boxShadow: selected
-                          ? "0 0 20px rgba(232,123,44,0.1), inset 0 0 20px rgba(232,123,44,0.03)"
+                          ? "0 0 20px rgba(255,122,26,0.1), inset 0 0 20px rgba(255,122,26,0.03)"
                           : undefined,
                       }}
                     >
                       {!available && (
                         <span
                           className="absolute right-3 top-3 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#888]"
-                          style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.08)" }}
+                          style={{ background: "var(--border)", border: "1px solid var(--border2)" }}
                         >
                           Coming Soon
                         </span>
@@ -584,12 +600,12 @@ function WizardContent() {
                     updateBusiness({ category: e.target.value as WizardFormData["business"]["category"] })
                   }
                   style={selectStyle}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(232,123,44,0.5)")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(255,122,26,0.5)")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border2)")}
                 >
                   <option value="">Select a category</option>
                   {BUSINESS_CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat} style={{ background: "#1a1a1a" }}>{cat}</option>
+                    <option key={cat} value={cat} style={{ background: "var(--card-elevated)" }}>{cat}</option>
                   ))}
                 </select>
               </div>
@@ -602,11 +618,11 @@ function WizardContent() {
                   value={data.business.timezone}
                   onChange={(e) => updateBusiness({ timezone: e.target.value })}
                   style={selectStyle}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(232,123,44,0.5)")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(255,122,26,0.5)")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border2)")}
                 >
                   {TIMEZONES.map((tz) => (
-                    <option key={tz.value} value={tz.value} style={{ background: "#1a1a1a" }}>
+                    <option key={tz.value} value={tz.value} style={{ background: "var(--card-elevated)" }}>
                       {tz.label}
                     </option>
                   ))}
@@ -634,7 +650,7 @@ function WizardContent() {
                 </label>
                 <div
                   className="space-y-2 rounded-lg p-3"
-                  style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}
+                  style={{ background: "var(--card-elevated)", border: "1px solid var(--border)" }}
                 >
                   {DAYS.map((day) => {
                     const schedule = data.business.hours[day];
@@ -642,7 +658,7 @@ function WizardContent() {
                       <div
                         key={day}
                         className="flex flex-wrap items-center gap-2 pb-2 last:pb-0 sm:flex-nowrap"
-                        style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
+                        style={{ borderBottom: "1px solid var(--surface)" }}
                       >
                         <span className="w-24 shrink-0 text-sm text-[#AAAAAA]">{DAY_LABELS[day]}</span>
                         <label className="flex items-center gap-1.5 text-xs text-[#888]">
@@ -650,7 +666,7 @@ function WizardContent() {
                             type="checkbox"
                             checked={schedule.closed}
                             onChange={(e) => updateDaySchedule(day, { closed: e.target.checked })}
-                            className="accent-[#E87B2C]"
+                            className="accent-[var(--accent)]"
                           />
                           Closed
                         </label>
@@ -687,8 +703,8 @@ function WizardContent() {
                   rows={4}
                   placeholder="List your main services, e.g. cleanings, whitening, emergency care..."
                   style={textareaStyle}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(232,123,44,0.5)")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(255,122,26,0.5)")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border2)")}
                 />
               </div>
             </div>
@@ -720,8 +736,8 @@ function WizardContent() {
                   rows={3}
                   placeholder={`Hi, thanks for calling ${data.business.businessName || "us"}! This is ${data.voice.agentName || "your AI receptionist"}, how can I help you today?`}
                   style={textareaStyle}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(232,123,44,0.5)")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(255,122,26,0.5)")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border2)")}
                 />
                 <p className="mt-1 text-xs text-[#666]">Leave blank to use the auto-generated greeting.</p>
               </div>
@@ -734,8 +750,8 @@ function WizardContent() {
                   rows={4}
                   placeholder={"Q: What are your hours?\nA: We're open Mon–Fri 9am–5pm.\n\nQ: Do you accept walk-ins?\nA: Yes, walk-ins are welcome."}
                   style={textareaStyle}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(232,123,44,0.5)")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(255,122,26,0.5)")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border2)")}
                 />
               </div>
 
@@ -749,11 +765,11 @@ function WizardContent() {
                     updateVoice({ tone: e.target.value as WizardFormData["voice"]["tone"] })
                   }
                   style={selectStyle}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(232,123,44,0.5)")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(255,122,26,0.5)")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border2)")}
                 >
                   {VOICE_TONES.map((tone) => (
-                    <option key={tone} value={tone} style={{ background: "#1a1a1a" }}>{tone}</option>
+                    <option key={tone} value={tone} style={{ background: "var(--card-elevated)" }}>{tone}</option>
                   ))}
                 </select>
               </div>
@@ -783,7 +799,7 @@ function WizardContent() {
                 <div className="flex items-center gap-3 text-[#888]">
                   <div
                     className="h-5 w-5 animate-spin rounded-full border-2"
-                    style={{ borderColor: "#E87B2C", borderTopColor: "transparent" }}
+                    style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }}
                   />
                   Checking connection…
                 </div>
@@ -815,7 +831,7 @@ function WizardContent() {
               ) : (
                 <div
                   className="rounded-xl p-5"
-                  style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.08)" }}
+                  style={{ background: "var(--card-elevated)", border: "1px solid var(--border2)" }}
                 >
                   <div className="mb-4 flex items-center gap-3">
                     <span className="text-2xl">📅</span>
@@ -832,10 +848,10 @@ function WizardContent() {
 
               <div
                 className="rounded-lg p-4"
-                style={{ background: "rgba(232,123,44,0.04)", border: "1px solid rgba(232,123,44,0.12)" }}
+                style={{ background: "rgba(255,122,26,0.04)", border: "1px solid rgba(255,122,26,0.12)" }}
               >
                 <p className="text-xs leading-relaxed text-[#888]">
-                  <span className="font-medium text-[#E87B2C]">What access is requested: </span>
+                  <span className="font-medium text-[var(--accent)]">What access is requested: </span>
                   Read and write access to your Google Calendar to create appointment events.
                   You can revoke access at any time from your Google account settings.
                 </p>
@@ -874,10 +890,10 @@ function WizardContent() {
                       onClick={() => updateVoice({ phoneOption: opt })}
                       className="rounded-xl p-4 text-left transition-all duration-200"
                       style={{
-                        background: selected ? "rgba(232,123,44,0.05)" : "#1a1a1a",
-                        border: selected ? "1px solid #E87B2C" : "1px solid rgba(255,255,255,0.08)",
+                        background: selected ? "var(--accent-glow)" : "var(--card-elevated)",
+                        border: selected ? "1px solid var(--accent)" : "1px solid var(--border2)",
                         boxShadow: selected
-                          ? "0 0 20px rgba(232,123,44,0.08)"
+                          ? "0 0 20px rgba(255,122,26,0.08)"
                           : undefined,
                       }}
                     >
@@ -915,7 +931,7 @@ function WizardContent() {
                     // Not yet provisioned — show action button
                     <div
                       className="rounded-xl p-5"
-                      style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.08)" }}
+                      style={{ background: "var(--card-elevated)", border: "1px solid var(--border2)" }}
                     >
                       <p className="mb-1 text-sm font-medium text-white">
                         Claim your dedicated number
@@ -978,7 +994,7 @@ function WizardContent() {
               {/* Summary */}
               <dl
                 className="mb-6 space-y-4 rounded-lg p-4"
-                style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}
+                style={{ background: "var(--card-elevated)", border: "1px solid var(--border)" }}
               >
                 <ReviewSection title="Agent">
                   <ReviewRow label="Type" value={selectedAgent?.name ?? "AI Receptionist"} />
@@ -1024,7 +1040,7 @@ function WizardContent() {
               {/* Test Call */}
               <div
                 className="mb-6 rounded-xl p-5"
-                style={{ background: "rgba(232,123,44,0.04)", border: "1px solid rgba(232,123,44,0.15)" }}
+                style={{ background: "rgba(255,122,26,0.04)", border: "1px solid rgba(255,122,26,0.15)" }}
               >
                 <p className="mb-1 font-[Outfit] font-semibold text-white">Test your agent</p>
                 <p className="mb-4 text-sm text-[#888]">
@@ -1034,12 +1050,22 @@ function WizardContent() {
                   variant={testCallActive ? "ghost" : "secondary"}
                   size="md"
                   onClick={handleTestCall}
+                  disabled={testCallConnecting}
                 >
-                  {testCallActive ? "🔴 End test call" : "🎙️ Start test call"}
+                  {testCallActive
+                    ? "🔴 End call"
+                    : testCallConnecting
+                      ? "⏳ Starting..."
+                      : "🎙️ Start test call"}
                 </Button>
                 {testCallActive && (
-                  <p className="mt-3 text-sm text-[#E87B2C] animate-pulse">
+                  <p className="mt-3 text-sm text-[var(--accent)] animate-pulse">
                     Call in progress — speak now…
+                  </p>
+                )}
+                {testCallConnecting && (
+                  <p className="mt-3 text-sm text-[#888] animate-pulse">
+                    Connecting to your agent…
                   </p>
                 )}
               </div>
@@ -1049,7 +1075,7 @@ function WizardContent() {
           {/* Navigation */}
           <div
             className="mt-8 flex justify-between gap-4 pt-6"
-            style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
+            style={{ borderTop: "1px solid var(--border)" }}
           >
             <Button variant="ghost" onClick={handleBack} disabled={step === 0 || saving}>
               Back
@@ -1083,8 +1109,8 @@ function WizardContent() {
 
 function ReviewSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="pb-4 last:pb-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-      <h3 className="mb-2 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[#E87B2C]">
+    <div className="pb-4 last:pb-0" style={{ borderBottom: "1px solid var(--surface2)" }}>
+      <h3 className="mb-2 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[var(--accent)]">
         {title}
       </h3>
       <div className="space-y-2">{children}</div>

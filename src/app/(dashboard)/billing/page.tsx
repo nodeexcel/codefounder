@@ -7,10 +7,10 @@ const PLAN_META: Record<
   string,
   { label: string; price: number; calls: number; minutes: number }
 > = {
-  free: { label: "Free", price: 0, calls: 10, minutes: 30 },
-  starter: { label: "Starter", price: 29, calls: 100, minutes: 300 },
-  growth: { label: "Growth", price: 79, calls: 500, minutes: 1500 },
-  pro: { label: "Pro", price: 199, calls: Infinity, minutes: Infinity },
+  free:    { label: "Free",    price: 0,   calls: 10,       minutes: 30 },
+  starter: { label: "Starter", price: 149, calls: 500,      minutes: 1500 },
+  pro:     { label: "Pro",     price: 299, calls: 2500,     minutes: 7500 },
+  elite:   { label: "Elite",   price: 599, calls: Infinity, minutes: Infinity },
 };
 
 function fmtDate(ts: number): string {
@@ -57,14 +57,14 @@ function UsageRow({ label, used, limit }: { label: string; used: number; limit: 
   return (
     <div>
       <div className="mb-2 flex items-center justify-between text-sm">
-        <span className="text-[#AAAAAA]">{label}</span>
-        <span className="text-[#888]">
-          <span className="font-medium text-white">{used.toLocaleString()}</span>
+        <span style={{ color: "var(--muted)" }}>{label}</span>
+        <span style={{ color: "var(--muted)" }}>
+          <span className="font-medium" style={{ color: "var(--foreground)" }}>{used.toLocaleString()}</span>
           {" / "}
           <span>{isUnlimited ? "Unlimited" : limit.toLocaleString()}</span>
         </span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full" style={{ background: "rgba(255,255,255,0.06)" }}>
+      <div className="h-2 w-full overflow-hidden rounded-full" style={{ background: "var(--surface2)" }}>
         {!isUnlimited && (
           <div
             className="h-full rounded-full transition-all duration-500"
@@ -74,8 +74,7 @@ function UsageRow({ label, used, limit }: { label: string; used: number; limit: 
                 ? "#ef4444"
                 : isMed
                   ? "#eab308"
-                  : "linear-gradient(90deg, #E87B2C, #f59e0b)",
-              boxShadow: !isHigh && !isMed ? "0 0 8px rgba(232, 123, 44, 0.4)" : undefined,
+                  : "linear-gradient(90deg, var(--accent), var(--accent-light))",
             }}
           />
         )}
@@ -90,7 +89,7 @@ function UsageRow({ label, used, limit }: { label: string; used: number; limit: 
         </p>
       )}
       {isUnlimited && (
-        <p className="mt-1 text-xs text-[#888]">Unlimited on your current plan</p>
+        <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>Unlimited on your current plan</p>
       )}
     </div>
   );
@@ -200,33 +199,33 @@ export default async function BillingPage() {
 
           {/* Current Plan */}
           <section
-            className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:shadow-lg hover:shadow-[#E87B2C]/5"
+            className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300"
             style={{
-              background: "#161616",
-              border: isSubscribed ? "1px solid rgba(232,123,44,0.2)" : "1px solid rgba(255,255,255,0.07)",
+              background: "var(--card)",
+              border: isSubscribed ? "1px solid rgba(255,122,26,0.2)" : "1px solid var(--border)",
             }}
           >
             {isSubscribed && (
               <>
                 <div
                   className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-70"
-                  style={{ background: "linear-gradient(90deg, #E87B2C, #f59e0b, transparent)" }}
+                  style={{ background: "linear-gradient(90deg, var(--accent), var(--accent-light), transparent)" }}
                 />
                 <div
                   className="pointer-events-none absolute -top-8 -right-8 h-32 w-32 rounded-full opacity-10"
-                  style={{ background: "radial-gradient(circle, rgba(232,123,44,0.8) 0%, transparent 70%)" }}
+                  style={{ background: "radial-gradient(circle, var(--accent) 0%, transparent 70%)" }}
                 />
               </>
             )}
             <div className="relative mb-5 flex items-center justify-between">
-              <p className="font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[#E87B2C]">
+              <p className="font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
                 Current Plan
               </p>
               {!isSubscribed && (
                 <a
                   href="/pricing"
-                  className="relative overflow-hidden rounded-lg px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:shadow-lg hover:shadow-[#E87B2C]/25"
-                  style={{ background: "#E87B2C", fontFamily: "Outfit, sans-serif" }}
+                  className="relative overflow-hidden rounded-lg px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:shadow-lg"
+                  style={{ background: "var(--accent)", fontFamily: "Outfit, sans-serif" }}
                 >
                   Upgrade plan →
                 </a>
@@ -236,31 +235,31 @@ export default async function BillingPage() {
             <div className="relative flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="font-[Outfit] text-2xl font-bold text-white">{meta.label}</span>
+                  <span className="font-[Outfit] text-2xl font-bold" style={{ color: "var(--foreground)" }}>{meta.label}</span>
                   <Badge status={subStatus} />
                 </div>
 
                 <dl className="mt-3 space-y-1.5 text-sm">
                   {meta.price > 0 && (
                     <div className="flex gap-2">
-                      <dt className="text-[#888]">Amount</dt>
-                      <dd className="font-medium text-white">{fmtCents(unitAmount)}/month</dd>
+                      <dt style={{ color: "var(--muted)" }}>Amount</dt>
+                      <dd className="font-medium" style={{ color: "var(--foreground)" }}>{fmtCents(unitAmount)}/month</dd>
                     </div>
                   )}
                   {trialEnd && (
                     <div className="flex gap-2">
-                      <dt className="text-[#888]">Trial ends</dt>
-                      <dd className="text-white">{trialEnd}</dd>
+                      <dt style={{ color: "var(--muted)" }}>Trial ends</dt>
+                      <dd style={{ color: "var(--foreground)" }}>{trialEnd}</dd>
                     </div>
                   )}
                   {nextBillingDate && (
                     <div className="flex gap-2">
-                      <dt className="text-[#888]">Next billing</dt>
-                      <dd className="text-white">{nextBillingDate}</dd>
+                      <dt style={{ color: "var(--muted)" }}>Next billing</dt>
+                      <dd style={{ color: "var(--foreground)" }}>{nextBillingDate}</dd>
                     </div>
                   )}
                   {!isSubscribed && (
-                    <p className="text-[#888]">No active subscription</p>
+                    <p style={{ color: "var(--muted)" }}>No active subscription</p>
                   )}
                 </dl>
               </div>
@@ -270,8 +269,8 @@ export default async function BillingPage() {
                   <form method="POST" action="/api/stripe/portal">
                     <button
                       type="submit"
-                      className="w-full rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:shadow-lg hover:shadow-[#E87B2C]/25"
-                      style={{ background: "#E87B2C", fontFamily: "Outfit, sans-serif" }}
+                      className="w-full rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:shadow-lg"
+                      style={{ background: "var(--accent)", fontFamily: "Outfit, sans-serif" }}
                     >
                       Manage Billing
                     </button>
@@ -279,13 +278,18 @@ export default async function BillingPage() {
                   <form method="POST" action="/api/stripe/portal">
                     <button
                       type="submit"
-                      className="w-full rounded-lg px-5 py-2.5 text-sm font-medium text-[#888] transition-all duration-200 hover:border-red-500/30 hover:text-red-400"
-                      style={{ border: "1px solid rgba(255,255,255,0.08)", fontFamily: "Outfit, sans-serif" }}
+                      className="w-full rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200 hover:border-red-500/30 hover:text-red-400"
+                      style={{
+                        border: "1px solid var(--border2)",
+                        color: "var(--muted)",
+                        fontFamily: "Outfit, sans-serif",
+                        background: "transparent",
+                      }}
                     >
                       Cancel Subscription
                     </button>
                   </form>
-                  <p className="text-center text-xs text-[#888]">
+                  <p className="text-center text-xs" style={{ color: "var(--muted)" }}>
                     Confirm in the billing portal
                   </p>
                 </div>
@@ -295,15 +299,18 @@ export default async function BillingPage() {
 
           {/* Usage */}
           <section
-            className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:shadow-lg hover:shadow-[#E87B2C]/5"
-            style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.07)" }}
+            className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300"
+            style={{ background: "var(--card)", border: "1px solid var(--border)" }}
           >
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-[#E87B2C]/40 via-[#f59e0b]/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              style={{ background: "linear-gradient(90deg, var(--accent)/40, var(--accent-light)/20, transparent)" }}
+            />
             <div className="mb-5 flex items-center justify-between">
-              <p className="font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[#E87B2C]">
+              <p className="font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
                 Usage This Month
               </p>
-              <span className="text-xs text-[#888]">
+              <span className="text-xs" style={{ color: "var(--muted)" }}>
                 Resets{" "}
                 {new Date(
                   new Date().getFullYear(),
@@ -320,11 +327,14 @@ export default async function BillingPage() {
 
           {/* Invoice History */}
           <section
-            className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:shadow-lg hover:shadow-[#E87B2C]/5"
-            style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.07)" }}
+            className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300"
+            style={{ background: "var(--card)", border: "1px solid var(--border)" }}
           >
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-[#E87B2C]/40 via-[#f59e0b]/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-            <p className="mb-5 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[#E87B2C]">
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              style={{ background: "linear-gradient(90deg, var(--accent)/40, var(--accent-light)/20, transparent)" }}
+            />
+            <p className="mb-5 font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
               Invoice History
             </p>
 
@@ -332,11 +342,11 @@ export default async function BillingPage() {
               <div className="flex flex-col items-center gap-3 py-10 text-center">
                 <div
                   className="flex h-12 w-12 items-center justify-center rounded-xl text-xl"
-                  style={{ background: "rgba(232,123,44,0.1)", color: "#E87B2C" }}
+                  style={{ background: "var(--accent-glow)", color: "var(--accent)" }}
                 >
                   🧾
                 </div>
-                <p className="text-sm text-[#888]">
+                <p className="text-sm" style={{ color: "var(--muted)" }}>
                   {isSubscribed
                     ? "No invoices yet. They'll appear here after your first charge."
                     : "Upgrade to a paid plan to see invoice history."}
@@ -344,8 +354,11 @@ export default async function BillingPage() {
                 {!isSubscribed && (
                   <a
                     href="/pricing"
-                    className="mt-1 rounded-lg px-4 py-2 text-sm text-[#E87B2C] transition-all duration-200 hover:bg-[#E87B2C]/10"
-                    style={{ border: "1px solid rgba(232,123,44,0.3)" }}
+                    className="mt-1 rounded-lg px-4 py-2 text-sm transition-all duration-200"
+                    style={{
+                      color: "var(--accent)",
+                      border: "1px solid rgba(255,122,26,0.3)",
+                    }}
                   >
                     View plans
                   </a>
@@ -353,7 +366,7 @@ export default async function BillingPage() {
               </div>
             ) : (
               <>
-                <div className="mb-3 hidden grid-cols-[1fr_auto_auto_auto] gap-4 px-1 text-[11px] font-semibold uppercase tracking-[2px] text-[#888] sm:grid">
+                <div className="mb-3 hidden grid-cols-[1fr_auto_auto_auto] gap-4 px-1 text-[11px] font-semibold uppercase tracking-[2px] sm:grid" style={{ color: "var(--muted)" }}>
                   <span>Date</span>
                   <span className="text-right">Amount</span>
                   <span>Status</span>
@@ -364,21 +377,21 @@ export default async function BillingPage() {
                   {invoices.map((inv, i) => (
                     <div
                       key={inv.id}
-                      className="grid grid-cols-1 gap-2 py-4 transition-colors duration-150 hover:bg-white/[0.02] sm:grid-cols-[1fr_auto_auto_auto] sm:items-center sm:gap-4 rounded-lg px-1 -mx-1"
+                      className="grid grid-cols-1 gap-2 py-4 rounded-lg px-1 -mx-1 transition-colors duration-150 hover:bg-[var(--surface)] sm:grid-cols-[1fr_auto_auto_auto] sm:items-center sm:gap-4"
                       style={{
-                        borderTop: i > 0 ? "1px solid rgba(255,255,255,0.06)" : undefined,
+                        borderTop: i > 0 ? "1px solid var(--border)" : undefined,
                       }}
                     >
                       <div>
-                        <p className="text-sm font-medium text-white">
+                        <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
                           {inv.created ? fmtDate(inv.created) : "—"}
                         </p>
                         {inv.number && (
-                          <p className="text-xs text-[#888]">{inv.number}</p>
+                          <p className="text-xs" style={{ color: "var(--muted)" }}>{inv.number}</p>
                         )}
                       </div>
 
-                      <span className="text-sm font-medium text-white sm:text-right">
+                      <span className="text-sm font-medium sm:text-right" style={{ color: "var(--foreground)" }}>
                         {inv.amount_paid != null
                           ? fmtCents(inv.amount_paid)
                           : fmtCents(inv.amount_due ?? 0)}
@@ -391,12 +404,13 @@ export default async function BillingPage() {
                           href={inv.invoice_pdf}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm text-[#E87B2C] transition-colors duration-150 hover:text-[#f59e0b] hover:underline"
+                          className="text-sm transition-colors duration-150 hover:underline"
+                          style={{ color: "var(--accent)" }}
                         >
                           PDF ↓
                         </a>
                       ) : (
-                        <span className="text-sm text-[#888]">—</span>
+                        <span className="text-sm" style={{ color: "var(--muted)" }}>—</span>
                       )}
                     </div>
                   ))}

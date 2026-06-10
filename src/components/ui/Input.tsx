@@ -15,7 +15,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="mb-1.5 block text-sm font-medium text-gray-300"
+            className="mb-1.5 block text-sm font-medium"
+            style={{ color: "var(--muted)" }}
           >
             {label}
           </label>
@@ -24,19 +25,24 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           className={[
-            "w-full rounded-lg border bg-[#141414] px-4 py-2.5 text-white placeholder:text-gray-500",
-            "border-[#2a2a2a] transition-all duration-200",
-            "focus:border-[#E87B2C]/60 focus:outline-none focus:ring-1 focus:ring-[#E87B2C]/30",
+            "w-full rounded-lg border px-4 py-2.5 placeholder:text-[var(--muted-low)]",
+            "transition-all duration-200 outline-none",
+            "focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/30",
             error ? "border-red-500 focus:border-red-500 focus:ring-red-500/30" : "",
             className,
           ]
             .filter(Boolean)
             .join(" ")}
+          style={{
+            background: "var(--card2)",
+            borderColor: error ? undefined : "var(--border2)",
+            color: "var(--foreground)",
+          }}
           {...props}
         />
         {error && <p className="mt-1.5 text-sm text-red-400">{error}</p>}
         {hint && !error && (
-          <p className="mt-1.5 text-sm text-gray-500">{hint}</p>
+          <p className="mt-1.5 text-sm" style={{ color: "var(--muted-low)" }}>{hint}</p>
         )}
       </div>
     );
