@@ -87,6 +87,7 @@ function WizardContent() {
   const [calendarChecking, setCalendarChecking] = useState(false);
   const [testCallActive, setTestCallActive] = useState(false);
   const [testCallConnecting, setTestCallConnecting] = useState(false);
+  const [micModalOpen, setMicModalOpen] = useState(false);
   const [provisioning, setProvisioning] = useState(false);
   const [vapiPhoneNumberId, setVapiPhoneNumberId] = useState<string | null>(null);
   const vapiRef = useRef<import("@vapi-ai/web").default | null>(null);
@@ -326,35 +327,11 @@ function WizardContent() {
     }
   }
 
-  async function handleTestCall() {
-    const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY;
-    if (!publicKey) {
-      setSaveError("NEXT_PUBLIC_VAPI_PUBLIC_KEY is not set — test calls require a Vapi public key.");
-      return;
-    }
-
-    // End active call
-    if (testCallActive || testCallConnecting) {
-      vapiRef.current?.stop();
-      vapiRef.current = null;
-      setTestCallActive(false);
-      setTestCallConnecting(false);
-      return;
-    }
+  async function startVapiCall() {
+    const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY!;
 
     setSaveError(null);
     setTestCallConnecting(true);
-
-    // Request microphone permission explicitly before starting
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Release the stream immediately — Vapi SDK will open its own track
-      stream.getTracks().forEach((t) => t.stop());
-    } catch {
-      setSaveError("Microphone access denied. Please allow microphone access and try again.");
-      setTestCallConnecting(false);
-      return;
-    }
 
     const { data: sessionRow } = await supabase
       .from("agent_wizard_sessions")
@@ -373,7 +350,6 @@ function WizardContent() {
     }
 
     try {
-      // Clean up any stale instance
       if (vapiRef.current) {
         vapiRef.current.stop();
         vapiRef.current = null;
@@ -394,15 +370,9 @@ function WizardContent() {
         setTestCallConnecting(false);
         vapiRef.current = null;
       });
-      vapi.on("speech-start", () => {
-        console.log("[vapi] AI speaking");
-      });
-      vapi.on("speech-end", () => {
-        console.log("[vapi] AI stopped speaking");
-      });
-      vapi.on("message", (msg: unknown) => {
-        console.log("[vapi] Message:", msg);
-      });
+      vapi.on("speech-start", () => { console.log("[vapi] AI speaking"); });
+      vapi.on("speech-end", () => { console.log("[vapi] AI stopped speaking"); });
+      vapi.on("message", (msg: unknown) => { console.log("[vapi] Message:", msg); });
       vapi.on("error", (err: unknown) => {
         console.error("[vapi] Error:", err);
         setTestCallActive(false);
@@ -419,13 +389,55 @@ function WizardContent() {
 
       console.log("[vapi] Starting call with assistantId:", assistantId);
       await vapi.start(assistantId);
-      // call-start event drives setTestCallActive(true); if start() resolves
-      // without firing call-start, fall back gracefully
       setTestCallConnecting(false);
     } catch (err) {
       vapiRef.current = null;
       setTestCallConnecting(false);
       setSaveError(err instanceof Error ? err.message : "Failed to start test call.");
+    }
+  }
+
+  async function handleTestCall() {
+    const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY;
+    if (!publicKey) {
+      setSaveError("NEXT_PUBLIC_VAPI_PUBLIC_KEY is not set — test calls require a Vapi public key.");
+      return;
+    }
+
+    // End active call
+    if (testCallActive || testCallConnecting) {
+      vapiRef.current?.stop();
+      vapiRef.current = null;
+      setTestCallActive(false);
+      setTestCallConnecting(false);
+      return;
+    }
+
+    // Check current microphone permission status
+    try {
+      const result = await navigator.permissions.query({ name: "microphone" as PermissionName });
+      if (result.state === "granted") {
+        // Permission already granted — start immediately
+        await startVapiCall();
+      } else {
+        // 'prompt' or 'denied' — show the permission modal
+        setMicModalOpen(true);
+      }
+    } catch {
+      // permissions.query not supported (some browsers) — fall back to direct request
+      setMicModalOpen(true);
+    }
+  }
+
+  async function handleRequestMicPermission() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((t) => t.stop());
+      setMicModalOpen(false);
+      await startVapiCall();
+    } catch {
+      setMicModalOpen(false);
+      setSaveError("Microphone access denied. Please allow it in your browser settings to test calls.");
     }
   }
 
@@ -1083,6 +1095,80 @@ function WizardContent() {
                   />
                 </ReviewSection>
               </dl>
+
+              {/* Microphone permission modal */}
+              {micModalOpen && (
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                  style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+                >
+                  <div
+                    className="w-full max-w-sm rounded-2xl p-6"
+                    style={{ background: "var(--card)", border: "1px solid var(--border2)", boxShadow: "var(--shadow-card-hover)" }}
+                  >
+                    {/* Icon */}
+                    <div
+                      className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full"
+                      style={{ background: "rgba(255,122,26,0.10)", border: "1px solid rgba(255,122,26,0.20)" }}
+                    >
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                        <line x1="12" y1="19" x2="12" y2="23"/>
+                        <line x1="8" y1="23" x2="16" y2="23"/>
+                      </svg>
+                    </div>
+
+                    <h3
+                      className="mb-2 text-center text-base font-bold"
+                      style={{ fontFamily: "var(--font-heading)", color: "var(--foreground)" }}
+                    >
+                      Microphone Access Required
+                    </h3>
+                    <p className="mb-4 text-center text-sm" style={{ color: "var(--muted)" }}>
+                      To test your AI agent, please allow microphone access when your browser asks.
+                    </p>
+
+                    {/* Browser instructions */}
+                    <div
+                      className="mb-5 space-y-2 rounded-xl p-3"
+                      style={{ background: "var(--card2)", border: "1px solid var(--border)" }}
+                    >
+                      <p className="text-xs font-medium" style={{ color: "var(--muted)", fontFamily: "var(--font-sans)" }}>
+                        Browser instructions:
+                      </p>
+                      <p className="text-xs" style={{ color: "var(--foreground)" }}>
+                        <span className="font-semibold">Chrome:</span> Click the 🎥 icon in the address bar → Allow
+                      </p>
+                      <p className="text-xs" style={{ color: "var(--foreground)" }}>
+                        <span className="font-semibold">Firefox:</span> Click the microphone icon in the address bar → Allow
+                      </p>
+                      <p className="text-xs" style={{ color: "var(--foreground)" }}>
+                        <span className="font-semibold">Safari:</span> Safari menu → Settings for This Website → Microphone → Allow
+                      </p>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        className="flex-1 rounded-lg py-2 text-sm font-medium transition-colors"
+                        style={{ background: "var(--card2)", border: "1px solid var(--border2)", color: "var(--muted)", fontFamily: "var(--font-sans)" }}
+                        onClick={() => setMicModalOpen(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="flex-1 rounded-lg py-2 text-sm font-semibold text-white transition-all"
+                        style={{ background: "var(--accent)", fontFamily: "var(--font-sans)" }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--accent-hover)"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--accent)"; }}
+                        onClick={handleRequestMicPermission}
+                      >
+                        Request Permission
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Test Call */}
               <div
