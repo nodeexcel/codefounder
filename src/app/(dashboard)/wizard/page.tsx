@@ -65,6 +65,8 @@ function WizardContent() {
     preselected && AVAILABLE_AGENT_TYPES.includes(preselected)
       ? preselected
       : null;
+  const reconfigure = searchParams.get("reconfigure") === "true";
+  const isNew = searchParams.get("new") === "true";
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -128,19 +130,23 @@ function WizardContent() {
       setUserId(user.id);
 
       const saved = await loadWizardProgress(supabase, user.id, "voice");
-      if (saved) {
+      if (saved && !isNew) {
         setData(saved.data);
         // Restore vapiPhoneNumberId from persisted voice_settings
         const savedVapiId = (saved.data.voice as unknown as Record<string, unknown>)
           .vapiPhoneNumberId as string | undefined;
         if (savedVapiId) setVapiPhoneNumberId(savedVapiId);
-        if (saved.status === "live") {
+        if (saved.status === "live" && !reconfigure) {
           setLaunchSummary({
             agentName: saved.data.voice.agentName.trim(),
             businessName: saved.data.business.businessName.trim(),
             phoneNumber: saved.data.voice.phoneNumber || "",
           });
           setLaunched(true);
+        } else if (reconfigure) {
+          // Reset to draft at step 1 so user can edit with existing data pre-filled
+          await saveWizardProgress(supabase, user.id, saved.data, 1, "draft");
+          setStep(1);
         } else {
           setStep(saved.step);
         }

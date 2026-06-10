@@ -50,7 +50,7 @@ export default async function AgentsPage() {
           <p className="font-[Outfit] text-[11px] font-semibold uppercase tracking-[3px] text-[#E87B2C]">
             All Agents
           </p>
-          <Button href="/wizard" variant="primary" size="sm">
+          <Button href="/wizard?new=true" variant="primary" size="sm">
             + New agent
           </Button>
         </div>
@@ -216,7 +216,7 @@ export default async function AgentsPage() {
                     </Button>
                   ) : isLive ? (
                     <>
-                      <Button href={`/wizard?agent=${agent.id}`} variant="outline" size="md">
+                      <Button href="/wizard?reconfigure=true" variant="outline" size="md">
                         Reconfigure
                       </Button>
                       {agent.id === "voice" && (

@@ -413,7 +413,7 @@ function BusinessTab() {
           <span className="text-sm text-[#888]">Voice Agent</span>
         </div>
         <Link
-          href="/wizard"
+          href="/wizard?reconfigure=true"
           className="rounded-lg px-4 py-2 text-sm font-medium text-[#AAAAAA] transition-all duration-200 hover:text-[#E87B2C]"
           style={{ border: "1px solid rgba(255,255,255,0.08)" }}
         >
