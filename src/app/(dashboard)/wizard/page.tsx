@@ -13,12 +13,15 @@ import {
   BUSINESS_CATEGORIES,
   DAY_LABELS,
   DAYS,
+  DEFAULT_LEAVE_TYPES,
+  HR_WIZARD_STEPS,
   TIMEZONES,
   VOICE_TONES,
   WIZARD_STEPS,
   createInitialWizardData,
   formatWeekSchedule,
   type DayKey,
+  type HRSettings,
   type WizardFormData,
 } from "@/lib/types/wizard";
 
@@ -92,7 +95,15 @@ function WizardContent() {
   const [vapiPhoneNumberId, setVapiPhoneNumberId] = useState<string | null>(null);
   const vapiRef = useRef<import("@vapi-ai/web").default | null>(null);
 
+  // HR-specific state
+  const [hrUploadedFiles, setHrUploadedFiles] = useState<string[]>([]);
+  const [hrUploading, setHrUploading] = useState(false);
+  const [hrSessionId, setHrSessionId] = useState<string | null>(null);
+  const hrFileRef = useRef<HTMLInputElement>(null);
+
   const selectedAgent = data.agentType ? getAgentById(data.agentType) : null;
+  const isHR = data.agentType === "hr";
+  const currentSteps = isHR ? HR_WIZARD_STEPS : WIZARD_STEPS;
 
   const updateBusiness = useCallback(
     (partial: Partial<WizardFormData["business"]>) => {
@@ -124,6 +135,13 @@ function WizardContent() {
     []
   );
 
+  const updateHR = useCallback(
+    (partial: Partial<HRSettings>) => {
+      setData((prev) => ({ ...prev, hr: { ...prev.hr, ...partial } }));
+    },
+    []
+  );
+
   useEffect(() => {
     async function init() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -131,19 +149,33 @@ function WizardContent() {
 
       setUserId(user.id);
 
-      const saved = await loadWizardProgress(supabase, user.id, "voice");
+      const agentToLoad = validPreselect ?? "voice";
+      const saved = await loadWizardProgress(supabase, user.id, agentToLoad);
       if (saved && !isNew) {
         setData(saved.data);
-        // Restore vapiPhoneNumberId from persisted voice_settings
-        const savedVapiId = (saved.data.voice as unknown as Record<string, unknown>)
-          .vapiPhoneNumberId as string | undefined;
-        if (savedVapiId) setVapiPhoneNumberId(savedVapiId);
+        if (saved.data.agentType !== "hr") {
+          // Restore vapiPhoneNumberId from persisted voice_settings
+          const savedVapiId = (saved.data.voice as unknown as Record<string, unknown>)
+            .vapiPhoneNumberId as string | undefined;
+          if (savedVapiId) setVapiPhoneNumberId(savedVapiId);
+        }
         if (saved.status === "live" && !reconfigure) {
-          setLaunchSummary({
-            agentName: saved.data.voice.agentName.trim(),
-            businessName: saved.data.business.businessName.trim(),
-            phoneNumber: saved.data.voice.phoneNumber || "",
-          });
+          if (saved.data.agentType === "hr") {
+            // Fetch session id to show embed code
+            const { data: sessionRow } = await supabase
+              .from("agent_wizard_sessions")
+              .select("id")
+              .eq("user_id", user.id)
+              .eq("agent_type", "hr")
+              .maybeSingle();
+            setHrSessionId((sessionRow as { id?: string } | null)?.id ?? null);
+          } else {
+            setLaunchSummary({
+              agentName: saved.data.voice.agentName.trim(),
+              businessName: saved.data.business.businessName.trim(),
+              phoneNumber: saved.data.voice.phoneNumber || "",
+            });
+          }
           setLaunched(true);
         } else if (reconfigure) {
           // Reset to draft at step 1 so user can edit with existing data pre-filled
@@ -203,6 +235,12 @@ function WizardContent() {
       case 0:
         return data.agentType !== null && AVAILABLE_AGENT_TYPES.includes(data.agentType);
       case 1: {
+        if (isHR) {
+          return (
+            data.business.businessName.trim().length >= 2 &&
+            data.hr.approverEmail.trim().includes("@")
+          );
+        }
         const { businessName, category, services, location, phone } = data.business;
         const hasOpenDay = DAYS.some((d) => !data.business.hours[d].closed);
         return (
@@ -215,11 +253,12 @@ function WizardContent() {
         );
       }
       case 2:
+        if (isHR) return true; // file uploads are optional
         return data.voice.agentName.trim().length >= 2;
       case 3:
-        return true; // calendar connect is optional
+        return true; // optional for both
       case 4:
-        return true; // phone is optional
+        return true; // optional for both
       default:
         return true;
     }
@@ -281,7 +320,51 @@ function WizardContent() {
     }
   }
 
+  async function handleHRLaunch() {
+    if (!userId) { setSaveError("Not authenticated"); return; }
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const { error } = await saveWizardProgress(supabase, userId, data, step, "live");
+      if (error) { setSaveError(error); return; }
+      const { data: sessionRow } = await supabase
+        .from("agent_wizard_sessions")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("agent_type", "hr")
+        .maybeSingle();
+      setHrSessionId((sessionRow as { id?: string } | null)?.id ?? null);
+      setLaunched(true);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to launch HR Agent");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleHRFileUpload(file: File) {
+    setHrUploading(true);
+    setSaveError(null);
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res = await fetch("/api/hr/upload-knowledge", { method: "POST", body: fd });
+      const result = await res.json() as { success?: boolean; error?: string; filename?: string };
+      if (!res.ok || !result.success) {
+        setSaveError(result.error ?? "Upload failed");
+      } else {
+        setHrUploadedFiles((prev) => [...prev, result.filename ?? file.name]);
+      }
+    } catch {
+      setSaveError("Upload failed. Please try again.");
+    } finally {
+      setHrUploading(false);
+      if (hrFileRef.current) hrFileRef.current.value = "";
+    }
+  }
+
   async function handleLaunch() {
+    if (isHR) { await handleHRLaunch(); return; }
     if (!userId) { setSaveError("Not authenticated"); return; }
 
     const summary = {
@@ -328,7 +411,14 @@ function WizardContent() {
   }
 
   async function startVapiCall() {
-    const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY!;
+    const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY;
+    if (!publicKey) {
+      setSaveError("NEXT_PUBLIC_VAPI_PUBLIC_KEY is missing from the build. Redeploy after adding it to Vercel environment variables.");
+      return;
+    }
+
+    // Diagnostic: log the first/last 4 chars so you can verify this matches your Vapi public key
+    console.log("[vapi] Using public key:", publicKey.slice(0, 4) + "…" + publicKey.slice(-4));
 
     setSaveError(null);
     setTestCallConnecting(true);
@@ -387,7 +477,7 @@ function WizardContent() {
         setSaveError(msg);
       });
 
-      console.log("[vapi] Starting call with assistantId:", assistantId);
+      console.log("[vapi] Starting call — assistantId:", assistantId, "| public key prefix:", publicKey.slice(0, 8));
       await vapi.start(assistantId);
       setTestCallConnecting(false);
     } catch (err) {
@@ -461,6 +551,53 @@ function WizardContent() {
     );
   }
 
+  if (launched && isHR) {
+    const chatUrl = hrSessionId
+      ? `${typeof window !== "undefined" ? window.location.origin : ""}/hr-chat/${hrSessionId}`
+      : "";
+    const embedCode = chatUrl
+      ? `<iframe\n  src="${chatUrl}"\n  width="420"\n  height="640"\n  style="border:none;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.15);"\n></iframe>`
+      : "";
+    return (
+      <>
+        <DashboardNavbar title="Setup Wizard" />
+        <div className="flex min-h-[60vh] items-center justify-center p-8">
+          <div
+            className="relative w-full max-w-lg overflow-hidden rounded-xl p-8"
+            style={{ background: "var(--card-elevated)", border: "1px solid rgba(255,122,26,0.3)", boxShadow: "0 0 40px rgba(232,123,44,0.08)" }}
+          >
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-80" style={{ background: "linear-gradient(90deg, var(--accent), var(--accent-light), transparent)" }} />
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full text-3xl" style={{ background: "rgba(34,197,94,0.1)", boxShadow: "0 0 20px rgba(34,197,94,0.15)" }}>
+              ✓
+            </div>
+            <h2 className="font-heading text-2xl font-bold text-white">HR Agent is live!</h2>
+            <p className="mt-2 mb-6 text-[#888]">
+              {data.hr.agentName || "Your HR Assistant"} is ready for {data.business.businessName || "your company"}.
+            </p>
+            {chatUrl && (
+              <div className="mb-6 space-y-3">
+                <div className="flex items-center justify-between rounded-lg px-4 py-3" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+                  <p className="truncate text-sm text-[#888]">{chatUrl}</p>
+                  <a href={chatUrl} target="_blank" rel="noopener noreferrer" className="ml-3 shrink-0 text-xs text-[var(--accent)] underline">Open ↗</a>
+                </div>
+                {embedCode && (
+                  <div className="rounded-lg p-3" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+                    <p className="mb-1.5 text-xs text-[#888]">Embed code</p>
+                    <pre className="overflow-x-auto whitespace-pre-wrap text-xs text-[#666]">{embedCode}</pre>
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button href="/hr">Go to HR Dashboard</Button>
+              <Button href="/agents" variant="secondary">View agents</Button>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   if (launched) {
     return (
       <>
@@ -515,7 +652,7 @@ function WizardContent() {
     <>
       <DashboardNavbar
         title="Setup Wizard"
-        subtitle={`Step ${step + 1} of ${WIZARD_STEPS.length}: ${WIZARD_STEPS[step]}`}
+        subtitle={`Step ${step + 1} of ${currentSteps.length}: ${currentSteps[step] ?? ""}`}
       />
 
       <div className="mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
@@ -528,12 +665,12 @@ function WizardContent() {
           <div className="mb-3 flex items-center justify-between text-sm">
             <span className="text-[#888]">Progress</span>
             <span className="font-heading font-semibold text-[var(--accent)]">
-              {Math.round(((step + 1) / WIZARD_STEPS.length) * 100)}%
+              {Math.round(((step + 1) / currentSteps.length) * 100)}%
             </span>
           </div>
 
           <div className="flex justify-between gap-1 sm:gap-2">
-            {WIZARD_STEPS.map((label, i) => (
+            {currentSteps.map((label, i) => (
               <div key={label} className="flex flex-1 flex-col items-center">
                 <div
                   className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-all duration-300"
@@ -564,7 +701,7 @@ function WizardContent() {
             <div
               className="h-full rounded-full transition-all duration-500 ease-out"
               style={{
-                width: `${((step + 1) / WIZARD_STEPS.length) * 100}%`,
+                width: `${((step + 1) / currentSteps.length) * 100}%`,
                 background: "linear-gradient(90deg, var(--accent), var(--accent-light))",
                 boxShadow: "0 0 8px rgba(232, 123, 44, 0.5)",
               }}
@@ -632,8 +769,39 @@ function WizardContent() {
             </div>
           )}
 
-          {/* ── Step 1 — Business Profile ─────────────────────────────────────── */}
-          {step === 1 && (
+          {/* ── Step 1 — HR: Company Details ─────────────────────────────────── */}
+          {step === 1 && isHR && (
+            <div className="space-y-5">
+              <div>
+                <h2 className="font-heading text-xl font-bold text-white">Company details</h2>
+                <p className="mt-1 text-sm text-[#888]">Tell us about your company so the HR Agent can represent you accurately.</p>
+              </div>
+              <Input
+                label="Company name"
+                placeholder="Acme Corp"
+                value={data.business.businessName}
+                onChange={(e) => updateBusiness({ businessName: e.target.value })}
+              />
+              <Input
+                label="HR Agent name"
+                placeholder="Alex HR"
+                hint="What employees will see in the chat widget"
+                value={data.hr.agentName}
+                onChange={(e) => updateHR({ agentName: e.target.value })}
+              />
+              <Input
+                label="Approver email"
+                type="email"
+                placeholder="hr@yourcompany.com"
+                hint="Leave requests will be sent to this address"
+                value={data.hr.approverEmail}
+                onChange={(e) => updateHR({ approverEmail: e.target.value })}
+              />
+            </div>
+          )}
+
+          {/* ── Step 1 — Voice: Business Profile ─────────────────────────────── */}
+          {step === 1 && !isHR && (
             <div className="space-y-5">
               <div>
                 <h2 className="font-heading text-xl font-bold text-white">Business profile</h2>
@@ -769,8 +937,55 @@ function WizardContent() {
             </div>
           )}
 
-          {/* ── Step 2 — Configure Agent ──────────────────────────────────────── */}
-          {step === 2 && (
+          {/* ── Step 2 — HR: Upload Policies ─────────────────────────────────── */}
+          {step === 2 && isHR && (
+            <div className="space-y-5">
+              <div>
+                <h2 className="font-heading text-xl font-bold text-white">Upload HR policies</h2>
+                <p className="mt-1 text-sm text-[#888]">Upload your employee handbook and HR policy documents so the agent can answer questions accurately.</p>
+              </div>
+              <div
+                className="rounded-xl p-5"
+                style={{ background: "var(--surface)", border: "1px dashed var(--border2)" }}
+              >
+                <input
+                  ref={hrFileRef}
+                  type="file"
+                  accept=".txt,.pdf,.doc,.docx"
+                  className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleHRFileUpload(f); }}
+                />
+                <div className="text-center">
+                  <span className="text-4xl">📄</span>
+                  <p className="mt-3 font-medium text-white">Drop files here or click to upload</p>
+                  <p className="mt-1 text-xs text-[#666]">Supported: PDF, DOC, DOCX, TXT · Max 10 MB each</p>
+                  <Button
+                    onClick={() => hrFileRef.current?.click()}
+                    disabled={hrUploading}
+                    variant="secondary"
+                    size="md"
+                    className="mt-4"
+                  >
+                    {hrUploading ? "Uploading…" : "Choose file"}
+                  </Button>
+                </div>
+              </div>
+              {hrUploadedFiles.length > 0 && (
+                <ul className="space-y-2">
+                  {hrUploadedFiles.map((name, i) => (
+                    <li key={i} className="flex items-center gap-3 rounded-lg px-4 py-3" style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)" }}>
+                      <span className="text-green-400">✓</span>
+                      <span className="text-sm text-white">{name}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="text-center text-xs text-[#555]">You can skip this step and upload documents later from the HR dashboard.</p>
+            </div>
+          )}
+
+          {/* ── Step 2 — Voice: Configure Agent ──────────────────────────────── */}
+          {step === 2 && !isHR && (
             <div className="space-y-5">
               <div>
                 <h2 className="font-heading text-xl font-bold text-white">Configure agent</h2>
@@ -844,8 +1059,96 @@ function WizardContent() {
             </div>
           )}
 
-          {/* ── Step 3 — Connect Calendar ─────────────────────────────────────── */}
-          {step === 3 && (
+          {/* ── Step 3 — HR: Leave Types ─────────────────────────────────────── */}
+          {step === 3 && isHR && (
+            <div className="space-y-5">
+              <div>
+                <h2 className="font-heading text-xl font-bold text-white">Set leave types</h2>
+                <p className="mt-1 text-sm text-[#888]">Choose which leave types employees can request through the chat widget.</p>
+              </div>
+              <div className="space-y-2">
+                {DEFAULT_LEAVE_TYPES.map((lt) => {
+                  const checked = data.hr.leaveTypes.includes(lt);
+                  return (
+                    <label
+                      key={lt}
+                      className="flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 transition-all"
+                      style={{ background: checked ? "var(--accent-glow)" : "var(--surface)", border: `1px solid ${checked ? "var(--accent)" : "var(--border)"}` }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => {
+                          const types = e.target.checked
+                            ? [...data.hr.leaveTypes, lt]
+                            : data.hr.leaveTypes.filter((t) => t !== lt);
+                          updateHR({ leaveTypes: types });
+                        }}
+                        className="accent-[var(--accent)]"
+                      />
+                      <span className="text-sm font-medium text-white">{lt}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <div>
+                <p className="mb-1.5 text-sm font-medium text-[#aaa]">Custom leave type (optional)</p>
+                <div className="flex gap-2">
+                  <input
+                    id="custom-leave-input"
+                    type="text"
+                    placeholder="e.g. Study Leave"
+                    style={{ flex: 1, background: "var(--card-elevated)", border: "1px solid var(--border2)", color: "var(--foreground)", padding: "10px 16px", borderRadius: "8px", fontSize: "14px", outline: "none" }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const val = (e.target as HTMLInputElement).value.trim();
+                        if (val && !data.hr.leaveTypes.includes(val)) {
+                          updateHR({ leaveTypes: [...data.hr.leaveTypes, val] });
+                          (e.target as HTMLInputElement).value = "";
+                        }
+                      }
+                    }}
+                  />
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    onClick={() => {
+                      const input = document.getElementById("custom-leave-input") as HTMLInputElement | null;
+                      const val = input?.value.trim();
+                      if (val && !data.hr.leaveTypes.includes(val)) {
+                        updateHR({ leaveTypes: [...data.hr.leaveTypes, val] });
+                        if (input) input.value = "";
+                      }
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+              </div>
+              {data.hr.leaveTypes.some((t) => !DEFAULT_LEAVE_TYPES.includes(t as typeof DEFAULT_LEAVE_TYPES[number])) && (
+                <div className="space-y-1">
+                  <p className="text-xs text-[#888]">Custom types:</p>
+                  {data.hr.leaveTypes
+                    .filter((t) => !DEFAULT_LEAVE_TYPES.includes(t as typeof DEFAULT_LEAVE_TYPES[number]))
+                    .map((t) => (
+                      <div key={t} className="flex items-center justify-between rounded-lg px-3 py-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+                        <span className="text-sm text-white">{t}</span>
+                        <button
+                          type="button"
+                          onClick={() => updateHR({ leaveTypes: data.hr.leaveTypes.filter((lt) => lt !== t) })}
+                          className="text-xs text-[#555] hover:text-red-400"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Step 3 — Voice: Connect Calendar ─────────────────────────────── */}
+          {step === 3 && !isHR && (
             <div className="space-y-6">
               <div>
                 <h2 className="font-heading text-xl font-bold text-white">Connect Google Calendar</h2>
@@ -922,8 +1225,41 @@ function WizardContent() {
             </div>
           )}
 
-          {/* ── Step 4 — Phone Number ─────────────────────────────────────────── */}
-          {step === 4 && (
+          {/* ── Step 4 — HR: Go Live ─────────────────────────────────────────── */}
+          {step === 4 && isHR && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="font-heading text-xl font-bold text-white">Review & go live</h2>
+                <p className="mt-1 text-sm text-[#888]">Confirm your HR Agent setup and launch.</p>
+              </div>
+              <dl
+                className="space-y-4 rounded-lg p-4"
+                style={{ background: "var(--card-elevated)", border: "1px solid var(--border)" }}
+              >
+                <div className="pb-3" style={{ borderBottom: "1px solid var(--surface2)" }}>
+                  <h3 className="mb-2 font-heading text-[11px] font-semibold uppercase tracking-[3px] text-[var(--accent)]">Company</h3>
+                  <div className="flex justify-between text-sm"><dt className="text-[#888]">Name</dt><dd className="font-medium text-white">{data.business.businessName || "—"}</dd></div>
+                </div>
+                <div className="pb-3" style={{ borderBottom: "1px solid var(--surface2)" }}>
+                  <h3 className="mb-2 font-heading text-[11px] font-semibold uppercase tracking-[3px] text-[var(--accent)]">HR Agent</h3>
+                  <div className="flex justify-between text-sm"><dt className="text-[#888]">Agent name</dt><dd className="font-medium text-white">{data.hr.agentName || "—"}</dd></div>
+                  <div className="mt-1 flex justify-between text-sm"><dt className="text-[#888]">Approver email</dt><dd className="font-medium text-white">{data.hr.approverEmail || "—"}</dd></div>
+                </div>
+                <div>
+                  <h3 className="mb-2 font-heading text-[11px] font-semibold uppercase tracking-[3px] text-[var(--accent)]">Leave Types</h3>
+                  <dd className="text-sm font-medium text-white">{data.hr.leaveTypes.join(", ") || "—"}</dd>
+                </div>
+              </dl>
+              {hrUploadedFiles.length > 0 && (
+                <div className="rounded-lg px-4 py-3" style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)" }}>
+                  <p className="text-sm text-[#888]">{hrUploadedFiles.length} document{hrUploadedFiles.length !== 1 ? "s" : ""} uploaded to knowledge base</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Step 4 — Voice: Phone Number ─────────────────────────────────── */}
+          {step === 4 && !isHR && (
             <div className="space-y-6">
               <div>
                 <h2 className="font-heading text-xl font-bold text-white">Connect a phone number</h2>
@@ -1216,9 +1552,9 @@ function WizardContent() {
             <Button variant="ghost" onClick={handleBack} disabled={step === 0 || saving}>
               Back
             </Button>
-            {step < WIZARD_STEPS.length - 1 ? (
+            {step < currentSteps.length - 1 ? (
               <div className="flex items-center gap-3">
-                {(step === 3 || step === 4) && (
+                {((isHR && step === 2) || (!isHR && (step === 3 || step === 4))) && (
                   <button
                     type="button"
                     onClick={handleNext}

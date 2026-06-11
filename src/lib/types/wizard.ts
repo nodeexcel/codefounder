@@ -143,9 +143,40 @@ export interface WizardFormData {
   agentType: AgentType | null;
   business: BusinessDetails;
   voice: VoiceSettings;
+  hr: HRSettings;
 }
 
-export const AVAILABLE_AGENT_TYPES: AgentType[] = ["voice"];
+export const AVAILABLE_AGENT_TYPES: AgentType[] = ["voice", "hr"];
+
+export const HR_WIZARD_STEPS = [
+  "Choose Agent",
+  "Company Details",
+  "Upload Policies",
+  "Leave Types",
+  "Go Live",
+] as const;
+
+export const DEFAULT_LEAVE_TYPES = [
+  "Annual Leave",
+  "Sick Leave",
+  "Parental Leave",
+  "Unpaid Leave",
+  "Bereavement Leave",
+] as const;
+
+export interface HRSettings {
+  agentName: string;
+  approverEmail: string;
+  leaveTypes: string[];
+}
+
+export function createInitialHRSettings(): HRSettings {
+  return {
+    agentName: "HR Assistant",
+    approverEmail: "",
+    leaveTypes: [...DEFAULT_LEAVE_TYPES],
+  };
+}
 
 export function createDefaultWeekSchedule(): WeekSchedule {
   return {
@@ -182,6 +213,7 @@ export function createInitialWizardData(
       phoneOption: "",
       phoneNumber: "",
     },
+    hr: createInitialHRSettings(),
   };
 }
 

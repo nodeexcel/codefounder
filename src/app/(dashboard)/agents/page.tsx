@@ -5,7 +5,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { BusinessDetails, VoiceSettings } from "@/lib/types/wizard";
 import { timeAgo } from "@/lib/format";
 
-const AVAILABLE: Set<AgentType> = new Set(["voice"]);
+const AVAILABLE: Set<AgentType> = new Set(["voice", "hr"]);
 
 export default async function AgentsPage() {
   const supabase = await createServerSupabaseClient();
@@ -217,12 +217,17 @@ export default async function AgentsPage() {
                     </Button>
                   ) : isLive ? (
                     <>
-                      <Button href="/wizard?reconfigure=true" variant="outline" size="md">
+                      <Button href={`/wizard?agent=${agent.id}&reconfigure=true`} variant="outline" size="md">
                         Reconfigure
                       </Button>
                       {agent.id === "voice" && (
                         <Button href="/calls" variant="ghost" size="md">
                           Call logs
+                        </Button>
+                      )}
+                      {agent.id === "hr" && (
+                        <Button href="/hr" variant="ghost" size="md">
+                          HR Dashboard
                         </Button>
                       )}
                     </>
