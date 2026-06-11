@@ -4,9 +4,11 @@ import {
   createDefaultWeekSchedule,
   createInitialWizardData,
   createInitialHRSettings,
+  createInitialMarketingSettings,
   type BusinessDetails,
   type VoiceSettings,
   type HRSettings,
+  type MarketingSettings,
 } from "@/lib/types/wizard";
 import type { AgentType } from "@/lib/agents";
 
@@ -15,7 +17,7 @@ interface WizardSessionRow {
   current_step: number;
   status: string;
   business_details: Partial<BusinessDetails> | null;
-  voice_settings: Partial<VoiceSettings> | Partial<HRSettings> | null;
+  voice_settings: Partial<VoiceSettings> | Partial<HRSettings> | Partial<MarketingSettings> | null;
 }
 
 export async function loadWizardProgress(
@@ -36,7 +38,31 @@ export async function loadWizardProgress(
   const initial = createInitialWizardData(agentType);
 
   const business = row.business_details ?? {};
-  const maxStep = agentType === "hr" ? 4 : 5;
+  const maxStep = agentType === "hr" || agentType === "marketing" ? 4 : 5;
+
+  if (agentType === "marketing") {
+    const mktRaw = (row.voice_settings ?? {}) as Partial<MarketingSettings>;
+    return {
+      step: Math.min(Math.max(row.current_step, 0), maxStep),
+      status: row.status,
+      data: {
+        agentType: "marketing",
+        business: {
+          ...initial.business,
+          ...business,
+          hours: { ...createDefaultWeekSchedule(), ...(business.hours ?? {}) },
+        },
+        voice: initial.voice,
+        hr: initial.hr,
+        marketing: {
+          ...createInitialMarketingSettings(),
+          ...mktRaw,
+          platforms: Array.isArray(mktRaw.platforms) ? mktRaw.platforms : [],
+          topics: Array.isArray(mktRaw.topics) ? mktRaw.topics : [],
+        },
+      },
+    };
+  }
 
   if (agentType === "hr") {
     const hrRaw = (row.voice_settings ?? {}) as Partial<HRSettings>;
@@ -58,6 +84,7 @@ export async function loadWizardProgress(
             ? hrRaw.leaveTypes
             : createInitialHRSettings().leaveTypes,
         },
+        marketing: initial.marketing,
       },
     };
   }
@@ -81,6 +108,7 @@ export async function loadWizardProgress(
         ...voice,
       },
       hr: initial.hr,
+      marketing: initial.marketing,
     },
   };
 }
@@ -97,6 +125,7 @@ export async function saveWizardProgress(
   }
 
   const isHR = formData.agentType === "hr";
+  const isMarketing = formData.agentType === "marketing";
   const { error } = await supabase.from("agent_wizard_sessions").upsert(
     {
       user_id: userId,
@@ -104,8 +133,8 @@ export async function saveWizardProgress(
       current_step: currentStep,
       status,
       business_details: formData.business,
-      voice_settings: isHR ? formData.hr : formData.voice,
-      twilio_phone_number: isHR ? null : (formData.voice.phoneNumber || null),
+      voice_settings: isHR ? formData.hr : isMarketing ? formData.marketing : formData.voice,
+      twilio_phone_number: (isHR || isMarketing) ? null : (formData.voice.phoneNumber || null),
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id,agent_type" }

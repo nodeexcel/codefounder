@@ -144,9 +144,43 @@ export interface WizardFormData {
   business: BusinessDetails;
   voice: VoiceSettings;
   hr: HRSettings;
+  marketing: MarketingSettings;
 }
 
-export const AVAILABLE_AGENT_TYPES: AgentType[] = ["voice", "hr"];
+export const AVAILABLE_AGENT_TYPES: AgentType[] = ["voice", "hr", "marketing"];
+
+export const MARKETING_WIZARD_STEPS = [
+  "Choose Agent",
+  "Brand Details",
+  "Platforms",
+  "Frequency & Topics",
+  "Go Live",
+] as const;
+
+export const SOCIAL_PLATFORMS = ["facebook", "instagram", "linkedin", "twitter"] as const;
+export type SocialPlatform = (typeof SOCIAL_PLATFORMS)[number];
+
+export const MARKETING_TONES = ["Professional", "Casual", "Playful", "Bold", "Inspirational"] as const;
+export type MarketingTone = (typeof MARKETING_TONES)[number];
+
+export const POST_FREQUENCIES = ["Daily", "3x per week", "Weekly", "Bi-weekly"] as const;
+export type PostFrequency = (typeof POST_FREQUENCIES)[number];
+
+export interface MarketingSettings {
+  brandTone: MarketingTone;
+  platforms: SocialPlatform[];
+  frequency: PostFrequency;
+  topics: string[];
+}
+
+export function createInitialMarketingSettings(): MarketingSettings {
+  return {
+    brandTone: "Professional",
+    platforms: [],
+    frequency: "Weekly",
+    topics: [],
+  };
+}
 
 export const HR_WIZARD_STEPS = [
   "Choose Agent",
@@ -214,6 +248,7 @@ export function createInitialWizardData(
       phoneNumber: "",
     },
     hr: createInitialHRSettings(),
+    marketing: createInitialMarketingSettings(),
   };
 }
 

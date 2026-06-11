@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const protectedPrefixes = ["/dashboard", "/agents", "/wizard", "/hr"];
+const protectedPrefixes = ["/dashboard", "/agents", "/wizard", "/hr", "/marketing"];
 
 // These pages must never redirect — users need them while unauthenticated
 const publicAuthPages = new Set(["/forgot-password", "/reset-password"]);
@@ -129,6 +129,8 @@ export const config = {
     "/calls/:path*",
     "/hr/:path*",
     "/hr",
+    "/marketing/:path*",
+    "/marketing",
     "/admin/:path*",
     "/admin",
     "/login",

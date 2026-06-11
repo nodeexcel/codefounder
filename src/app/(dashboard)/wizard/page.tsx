@@ -15,6 +15,10 @@ import {
   DAYS,
   DEFAULT_LEAVE_TYPES,
   HR_WIZARD_STEPS,
+  MARKETING_TONES,
+  MARKETING_WIZARD_STEPS,
+  POST_FREQUENCIES,
+  SOCIAL_PLATFORMS,
   TIMEZONES,
   VOICE_TONES,
   WIZARD_STEPS,
@@ -22,6 +26,7 @@ import {
   formatWeekSchedule,
   type DayKey,
   type HRSettings,
+  type MarketingSettings,
   type WizardFormData,
 } from "@/lib/types/wizard";
 
@@ -101,9 +106,13 @@ function WizardContent() {
   const [hrSessionId, setHrSessionId] = useState<string | null>(null);
   const hrFileRef = useRef<HTMLInputElement>(null);
 
+  // Marketing-specific state
+  const [marketingSessionId, setMarketingSessionId] = useState<string | null>(null);
+
   const selectedAgent = data.agentType ? getAgentById(data.agentType) : null;
   const isHR = data.agentType === "hr";
-  const currentSteps = isHR ? HR_WIZARD_STEPS : WIZARD_STEPS;
+  const isMarketing = data.agentType === "marketing";
+  const currentSteps = isHR ? HR_WIZARD_STEPS : isMarketing ? MARKETING_WIZARD_STEPS : WIZARD_STEPS;
 
   const updateBusiness = useCallback(
     (partial: Partial<WizardFormData["business"]>) => {
@@ -142,6 +151,13 @@ function WizardContent() {
     []
   );
 
+  const updateMarketing = useCallback(
+    (partial: Partial<MarketingSettings>) => {
+      setData((prev) => ({ ...prev, marketing: { ...prev.marketing, ...partial } }));
+    },
+    []
+  );
+
   useEffect(() => {
     async function init() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -153,7 +169,7 @@ function WizardContent() {
       const saved = await loadWizardProgress(supabase, user.id, agentToLoad);
       if (saved && !isNew) {
         setData(saved.data);
-        if (saved.data.agentType !== "hr") {
+        if (saved.data.agentType === "voice") {
           // Restore vapiPhoneNumberId from persisted voice_settings
           const savedVapiId = (saved.data.voice as unknown as Record<string, unknown>)
             .vapiPhoneNumberId as string | undefined;
@@ -161,7 +177,6 @@ function WizardContent() {
         }
         if (saved.status === "live" && !reconfigure) {
           if (saved.data.agentType === "hr") {
-            // Fetch session id to show embed code
             const { data: sessionRow } = await supabase
               .from("agent_wizard_sessions")
               .select("id")
@@ -169,6 +184,14 @@ function WizardContent() {
               .eq("agent_type", "hr")
               .maybeSingle();
             setHrSessionId((sessionRow as { id?: string } | null)?.id ?? null);
+          } else if (saved.data.agentType === "marketing") {
+            const { data: sessionRow } = await supabase
+              .from("agent_wizard_sessions")
+              .select("id")
+              .eq("user_id", user.id)
+              .eq("agent_type", "marketing")
+              .maybeSingle();
+            setMarketingSessionId((sessionRow as { id?: string } | null)?.id ?? null);
           } else {
             setLaunchSummary({
               agentName: saved.data.voice.agentName.trim(),
@@ -241,6 +264,9 @@ function WizardContent() {
             data.hr.approverEmail.trim().includes("@")
           );
         }
+        if (isMarketing) {
+          return data.business.businessName.trim().length >= 2;
+        }
         const { businessName, category, services, location, phone } = data.business;
         const hasOpenDay = DAYS.some((d) => !data.business.hours[d].closed);
         return (
@@ -253,12 +279,13 @@ function WizardContent() {
         );
       }
       case 2:
-        if (isHR) return true; // file uploads are optional
+        if (isHR) return true;
+        if (isMarketing) return data.marketing.platforms.length > 0;
         return data.voice.agentName.trim().length >= 2;
       case 3:
-        return true; // optional for both
+        return true;
       case 4:
-        return true; // optional for both
+        return true;
       default:
         return true;
     }
@@ -363,7 +390,30 @@ function WizardContent() {
     }
   }
 
+  async function handleMarketingLaunch() {
+    if (!userId) { setSaveError("Not authenticated"); return; }
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const { error } = await saveWizardProgress(supabase, userId, data, step, "live");
+      if (error) { setSaveError(error); return; }
+      const { data: sessionRow } = await supabase
+        .from("agent_wizard_sessions")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("agent_type", "marketing")
+        .maybeSingle();
+      setMarketingSessionId((sessionRow as { id?: string } | null)?.id ?? null);
+      setLaunched(true);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to launch Marketing Agent");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleLaunch() {
+    if (isMarketing) { await handleMarketingLaunch(); return; }
     if (isHR) { await handleHRLaunch(); return; }
     if (!userId) { setSaveError("Not authenticated"); return; }
 
@@ -598,6 +648,44 @@ function WizardContent() {
     );
   }
 
+  if (launched && isMarketing) {
+    return (
+      <>
+        <DashboardNavbar title="Setup Wizard" />
+        <div className="flex min-h-[60vh] items-center justify-center p-8">
+          <div
+            className="relative w-full max-w-lg overflow-hidden rounded-xl p-8"
+            style={{ background: "var(--card-elevated)", border: "1px solid rgba(255,122,26,0.3)", boxShadow: "0 0 40px rgba(232,123,44,0.08)" }}
+          >
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-80" style={{ background: "linear-gradient(90deg, var(--accent), var(--accent-light), transparent)" }} />
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full text-3xl" style={{ background: "rgba(34,197,94,0.1)", boxShadow: "0 0 20px rgba(34,197,94,0.15)" }}>
+              ✓
+            </div>
+            <h2 className="font-heading text-2xl font-bold text-white">Marketing Agent is live!</h2>
+            <p className="mt-2 mb-6 text-[#888]">
+              {data.marketing.brandTone} content for {data.business.businessName || "your brand"} is ready to generate.
+            </p>
+            <div className="mb-4 rounded-xl p-4" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+              <p className="text-xs text-[#888] mb-2">Platforms configured</p>
+              <div className="flex flex-wrap gap-2">
+                {data.marketing.platforms.length > 0
+                  ? data.marketing.platforms.map((p) => (
+                      <span key={p} className="rounded-full px-3 py-1 text-xs font-semibold capitalize" style={{ background: "var(--accent-glow)", color: "var(--accent)", border: "1px solid rgba(255,122,26,0.2)" }}>{p}</span>
+                    ))
+                  : <span className="text-xs text-[#666]">None selected</span>
+                }
+              </div>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button href="/marketing">Go to Marketing Dashboard</Button>
+              <Button href="/agents" variant="secondary">View agents</Button>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   if (launched) {
     return (
       <>
@@ -800,8 +888,47 @@ function WizardContent() {
             </div>
           )}
 
+          {/* ── Step 1 — Marketing: Brand Details ───────────────────────────── */}
+          {step === 1 && isMarketing && (
+            <div className="space-y-5">
+              <div>
+                <h2 className="font-heading text-xl font-bold text-white">Brand details</h2>
+                <p className="mt-1 text-sm text-[#888]">Tell us about your brand so the AI can generate on-brand content.</p>
+              </div>
+              <Input
+                label="Business / brand name"
+                placeholder="Acme Co."
+                value={data.business.businessName}
+                onChange={(e) => updateBusiness({ businessName: e.target.value })}
+              />
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[#aaa]">Brand tone</label>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {MARKETING_TONES.map((tone) => {
+                    const sel = data.marketing.brandTone === tone;
+                    return (
+                      <button
+                        key={tone}
+                        type="button"
+                        onClick={() => updateMarketing({ brandTone: tone })}
+                        className="rounded-xl p-3 text-sm font-medium transition-all"
+                        style={{
+                          background: sel ? "var(--accent-glow)" : "var(--surface)",
+                          border: `1px solid ${sel ? "var(--accent)" : "var(--border)"}`,
+                          color: sel ? "var(--accent)" : "var(--muted)",
+                        }}
+                      >
+                        {tone}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ── Step 1 — Voice: Business Profile ─────────────────────────────── */}
-          {step === 1 && !isHR && (
+          {step === 1 && data.agentType === "voice" && (
             <div className="space-y-5">
               <div>
                 <h2 className="font-heading text-xl font-bold text-white">Business profile</h2>
@@ -984,8 +1111,49 @@ function WizardContent() {
             </div>
           )}
 
+          {/* ── Step 2 — Marketing: Platform Selection ───────────────────────── */}
+          {step === 2 && isMarketing && (
+            <div className="space-y-5">
+              <div>
+                <h2 className="font-heading text-xl font-bold text-white">Choose platforms</h2>
+                <p className="mt-1 text-sm text-[#888]">Select the social media platforms you want to post on.</p>
+              </div>
+              <div className="space-y-2">
+                {SOCIAL_PLATFORMS.map((platform) => {
+                  const checked = data.marketing.platforms.includes(platform);
+                  const labels: Record<string, string> = { facebook: "Facebook", instagram: "Instagram", linkedin: "LinkedIn", twitter: "Twitter / X" };
+                  const icons: Record<string, string> = { facebook: "📘", instagram: "📸", linkedin: "💼", twitter: "🐦" };
+                  return (
+                    <label
+                      key={platform}
+                      className="flex cursor-pointer items-center gap-4 rounded-lg px-4 py-3 transition-all"
+                      style={{ background: checked ? "var(--accent-glow)" : "var(--surface)", border: `1px solid ${checked ? "var(--accent)" : "var(--border)"}` }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => {
+                          const next = e.target.checked
+                            ? [...data.marketing.platforms, platform]
+                            : data.marketing.platforms.filter((p) => p !== platform);
+                          updateMarketing({ platforms: next });
+                        }}
+                        className="accent-[var(--accent)]"
+                      />
+                      <span className="text-xl">{icons[platform]}</span>
+                      <span className="font-medium text-white">{labels[platform]}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              {data.marketing.platforms.length === 0 && (
+                <p className="text-xs text-[#666]">Select at least one platform to continue.</p>
+              )}
+            </div>
+          )}
+
           {/* ── Step 2 — Voice: Configure Agent ──────────────────────────────── */}
-          {step === 2 && !isHR && (
+          {step === 2 && data.agentType === "voice" && (
             <div className="space-y-5">
               <div>
                 <h2 className="font-heading text-xl font-bold text-white">Configure agent</h2>
@@ -1147,8 +1315,91 @@ function WizardContent() {
             </div>
           )}
 
+          {/* ── Step 3 — Marketing: Frequency & Topics ───────────────────────── */}
+          {step === 3 && isMarketing && (
+            <div className="space-y-5">
+              <div>
+                <h2 className="font-heading text-xl font-bold text-white">Frequency &amp; topics</h2>
+                <p className="mt-1 text-sm text-[#888]">Set how often you want to post and what topics you cover.</p>
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[#aaa]">Posting frequency</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {POST_FREQUENCIES.map((freq) => {
+                    const sel = data.marketing.frequency === freq;
+                    return (
+                      <button
+                        key={freq}
+                        type="button"
+                        onClick={() => updateMarketing({ frequency: freq })}
+                        className="rounded-xl p-3 text-sm font-medium transition-all"
+                        style={{
+                          background: sel ? "var(--accent-glow)" : "var(--surface)",
+                          border: `1px solid ${sel ? "var(--accent)" : "var(--border)"}`,
+                          color: sel ? "var(--accent)" : "var(--muted)",
+                        }}
+                      >
+                        {freq}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-[#aaa]">Content topics (optional)</label>
+                <p className="mb-2 text-xs text-[#666]">Add topics the AI should focus on when generating posts.</p>
+                <div className="flex gap-2">
+                  <input
+                    id="topic-input"
+                    type="text"
+                    placeholder="e.g. New products, Tips, Behind the scenes"
+                    style={{ flex: 1, background: "var(--card-elevated)", border: "1px solid var(--border2)", color: "var(--foreground)", padding: "10px 16px", borderRadius: "8px", fontSize: "14px", outline: "none" }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const val = (e.target as HTMLInputElement).value.trim();
+                        if (val && !data.marketing.topics.includes(val)) {
+                          updateMarketing({ topics: [...data.marketing.topics, val] });
+                          (e.target as HTMLInputElement).value = "";
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const input = document.getElementById("topic-input") as HTMLInputElement | null;
+                      const val = input?.value.trim();
+                      if (val && !data.marketing.topics.includes(val)) {
+                        updateMarketing({ topics: [...data.marketing.topics, val] });
+                        if (input) input.value = "";
+                      }
+                    }}
+                    className="rounded-lg px-4 py-2 text-sm font-medium"
+                    style={{ background: "var(--accent)", color: "white" }}
+                  >
+                    Add
+                  </button>
+                </div>
+                {data.marketing.topics.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {data.marketing.topics.map((t) => (
+                      <span
+                        key={t}
+                        className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+                        style={{ background: "var(--accent-glow)", color: "var(--accent)", border: "1px solid rgba(255,122,26,0.2)" }}
+                      >
+                        {t}
+                        <button type="button" onClick={() => updateMarketing({ topics: data.marketing.topics.filter((x) => x !== t) })} className="text-[#666] hover:text-red-400">×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* ── Step 3 — Voice: Connect Calendar ─────────────────────────────── */}
-          {step === 3 && !isHR && (
+          {step === 3 && data.agentType === "voice" && (
             <div className="space-y-6">
               <div>
                 <h2 className="font-heading text-xl font-bold text-white">Connect Google Calendar</h2>
@@ -1258,8 +1509,40 @@ function WizardContent() {
             </div>
           )}
 
+          {/* ── Step 4 — Marketing: Review & Go Live ─────────────────────────── */}
+          {step === 4 && isMarketing && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="font-heading text-xl font-bold text-white">Review &amp; go live</h2>
+                <p className="mt-1 text-sm text-[#888]">Confirm your Marketing Agent setup and launch.</p>
+              </div>
+              <dl className="space-y-4 rounded-lg p-4" style={{ background: "var(--card-elevated)", border: "1px solid var(--border)" }}>
+                <div className="pb-3" style={{ borderBottom: "1px solid var(--surface2)" }}>
+                  <h3 className="mb-2 font-heading text-[11px] font-semibold uppercase tracking-[3px] text-[var(--accent)]">Brand</h3>
+                  <div className="flex justify-between text-sm"><dt className="text-[#888]">Name</dt><dd className="font-medium text-white">{data.business.businessName || "—"}</dd></div>
+                  <div className="mt-1 flex justify-between text-sm"><dt className="text-[#888]">Tone</dt><dd className="font-medium text-white">{data.marketing.brandTone}</dd></div>
+                  <div className="mt-1 flex justify-between text-sm"><dt className="text-[#888]">Frequency</dt><dd className="font-medium text-white">{data.marketing.frequency}</dd></div>
+                </div>
+                <div className="pb-3" style={{ borderBottom: "1px solid var(--surface2)" }}>
+                  <h3 className="mb-2 font-heading text-[11px] font-semibold uppercase tracking-[3px] text-[var(--accent)]">Platforms</h3>
+                  <dd className="font-medium capitalize text-white">{data.marketing.platforms.join(", ") || "—"}</dd>
+                </div>
+                <div>
+                  <h3 className="mb-2 font-heading text-[11px] font-semibold uppercase tracking-[3px] text-[var(--accent)]">Topics</h3>
+                  <dd className="font-medium text-white">{data.marketing.topics.join(", ") || "None set — AI will choose based on your brand"}</dd>
+                </div>
+              </dl>
+              <div className="rounded-lg p-4" style={{ background: "rgba(255,122,26,0.04)", border: "1px solid rgba(255,122,26,0.12)" }}>
+                <p className="text-xs text-[#888]">
+                  <span className="font-medium text-[var(--accent)]">Note: </span>
+                  Actual publishing requires OAuth approval from each platform. Use the Marketing Dashboard to generate, review, and schedule posts — publishing integration coming soon.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* ── Step 4 — Voice: Phone Number ─────────────────────────────────── */}
-          {step === 4 && !isHR && (
+          {step === 4 && data.agentType === "voice" && (
             <div className="space-y-6">
               <div>
                 <h2 className="font-heading text-xl font-bold text-white">Connect a phone number</h2>
@@ -1554,7 +1837,7 @@ function WizardContent() {
             </Button>
             {step < currentSteps.length - 1 ? (
               <div className="flex items-center gap-3">
-                {((isHR && step === 2) || (!isHR && (step === 3 || step === 4))) && (
+                {((isHR && step === 2) || (isMarketing && step === 3) || (data.agentType === "voice" && (step === 3 || step === 4))) && (
                   <button
                     type="button"
                     onClick={handleNext}

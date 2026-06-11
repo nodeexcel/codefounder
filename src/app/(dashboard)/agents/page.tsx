@@ -5,7 +5,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { BusinessDetails, VoiceSettings } from "@/lib/types/wizard";
 import { timeAgo } from "@/lib/format";
 
-const AVAILABLE: Set<AgentType> = new Set(["voice", "hr"]);
+const AVAILABLE: Set<AgentType> = new Set(["voice", "hr", "marketing"]);
 
 export default async function AgentsPage() {
   const supabase = await createServerSupabaseClient();
@@ -228,6 +228,11 @@ export default async function AgentsPage() {
                       {agent.id === "hr" && (
                         <Button href="/hr" variant="ghost" size="md">
                           HR Dashboard
+                        </Button>
+                      )}
+                      {agent.id === "marketing" && (
+                        <Button href="/marketing" variant="ghost" size="md">
+                          Marketing Dashboard
                         </Button>
                       )}
                     </>

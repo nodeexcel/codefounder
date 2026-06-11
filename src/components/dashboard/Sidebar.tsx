@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Bot, Phone, Wand2, CreditCard,
-  Settings2, ShieldCheck, LogOut, PanelLeftClose, PanelLeftOpen, Users,
+  Settings2, ShieldCheck, LogOut, PanelLeftClose, PanelLeftOpen, Users, Megaphone,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useSidebar } from "./SidebarContext";
@@ -25,6 +25,7 @@ const PRIMARY_NAV: NavItem[] = [
   { href: "/agents",    label: "Agents",        icon: Bot },
   { href: "/calls",     label: "Calls",         icon: Phone },
   { href: "/hr",        label: "HR",            icon: Users },
+  { href: "/marketing", label: "Marketing",     icon: Megaphone },
   { href: "/wizard",    label: "Setup Wizard",  icon: Wand2 },
 ];
 
