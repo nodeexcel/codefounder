@@ -106,6 +106,15 @@ function WizardContent() {
   const [hrSessionId, setHrSessionId] = useState<string | null>(null);
   const hrFileRef = useRef<HTMLInputElement>(null);
 
+  // OTP verification state for "Forward calls to" field
+  const [pendingForwardTo, setPendingForwardTo] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
+
   // Marketing-specific state
   const [marketingSessionId, setMarketingSessionId] = useState<string | null>(null);
 
@@ -175,6 +184,25 @@ function WizardContent() {
             .vapiPhoneNumberId as string | undefined;
           if (savedVapiId) setVapiPhoneNumberId(savedVapiId);
         }
+        // Bug 2: Load HR knowledge base files so they appear on reconfigure and review
+        if (saved.data.agentType === "hr") {
+          const { data: hrSess } = await supabase
+            .from("agent_wizard_sessions")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("agent_type", "hr")
+            .maybeSingle();
+          const hrSessId = (hrSess as { id?: string } | null)?.id;
+          if (hrSessId) {
+            const { data: kbRows } = await supabase
+              .from("hr_knowledge_base")
+              .select("filename")
+              .eq("agent_id", hrSessId);
+            if (kbRows?.length) {
+              setHrUploadedFiles(kbRows.map((r: { filename: string }) => r.filename));
+            }
+          }
+        }
         if (saved.status === "live" && !reconfigure) {
           if (saved.data.agentType === "hr") {
             const { data: sessionRow } = await supabase
@@ -215,6 +243,15 @@ function WizardContent() {
     }
     init();
   }, [supabase, validPreselect]);
+
+  // Bug 3: Initialise OTP verified state once wizard data finishes loading
+  useEffect(() => {
+    if (!loading && data.voice.forwardTo) {
+      setPendingForwardTo(data.voice.forwardTo);
+      setOtpVerified(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   // Auto-detect Google calendar connection when reaching step 3
   useEffect(() => {
@@ -387,6 +424,52 @@ function WizardContent() {
     } finally {
       setHrUploading(false);
       if (hrFileRef.current) hrFileRef.current.value = "";
+    }
+  }
+
+  async function handleSendOtp() {
+    setOtpSending(true);
+    setOtpError(null);
+    try {
+      const res = await fetch("/api/phone/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phoneNumber: pendingForwardTo }),
+      });
+      const result = await res.json() as { success?: boolean; error?: string };
+      if (!res.ok || !result.success) {
+        setOtpError(result.error ?? "Failed to send OTP. Please try again.");
+      } else {
+        setOtpSent(true);
+      }
+    } catch {
+      setOtpError("Failed to send OTP. Please try again.");
+    } finally {
+      setOtpSending(false);
+    }
+  }
+
+  async function handleVerifyOtp() {
+    setOtpVerifying(true);
+    setOtpError(null);
+    try {
+      const res = await fetch("/api/phone/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phoneNumber: pendingForwardTo, code: otpCode }),
+      });
+      const result = await res.json() as { success?: boolean; error?: string };
+      if (!res.ok || !result.success) {
+        setOtpError(result.error ?? "Invalid or expired code. Please try again.");
+      } else {
+        updateVoice({ forwardTo: pendingForwardTo });
+        setOtpVerified(true);
+        setOtpCode("");
+      }
+    } catch {
+      setOtpError("Verification failed. Please try again.");
+    } finally {
+      setOtpVerifying(false);
     }
   }
 

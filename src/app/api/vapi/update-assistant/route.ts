@@ -119,6 +119,8 @@ export async function POST(request: Request) {
   const modelPayload = {
     provider: "openai",
     model: "gpt-4o-mini",
+    temperature: 0.7,
+    maxTokens: 150,
     messages: [{ role: "system", content: systemPrompt }],
     tools: transferCallTool
       ? [appointmentBookingTool, transferCallTool]
@@ -131,27 +133,48 @@ export async function POST(request: Request) {
 
   const transcriberConfig = {
     provider: "deepgram",
-    model: "nova-2",
+    model: "nova-3",
     language: "en",
+    smartFormat: true,
+    endpointing: 200,
   };
 
   const voiceConfig = {
-    provider: "openai",
-    voiceId: "alloy",
-    fillerInjectionEnabled: true,
+    provider: "cartesia",
+    voiceId: "a0e99841-438c-4a64-b679-ae501e7d6091",
+    speed: 1.1,
   };
 
   const latencyConfig = {
     responseDelaySeconds: 0,
     llmRequestDelaySeconds: 0,
-    numWordsToInterruptAssistant: 3,
+    numWordsToInterruptAssistant: 2,
     backgroundDenoisingEnabled: true,
+    fillersEnabled: true,
+  };
+
+  const endCallConfig = {
+    endCallFunctionEnabled: true,
+    endCallPhrases: ["goodbye", "bye", "thank you bye", "that's all", "talk to you later"],
+    silenceTimeoutSeconds: 20,
   };
 
   let assistantId: string;
 
   if (existingAssistantId) {
     // ── User already has an assistant — PATCH it to update the prompt ──────────
+    const patchPayload = {
+      name: agentName,
+      firstMessage,
+      model: modelPayload,
+      transcriber: transcriberConfig,
+      voice: voiceConfig,
+      startSpeakingPlan: { waitSeconds: 0 },
+      ...latencyConfig,
+      ...endCallConfig,
+      ...forwardingConfig,
+    };
+    console.log("[vapi/update-assistant] PATCH payload:", JSON.stringify(patchPayload, null, 2));
     const patchRes = await fetch(
       `https://api.vapi.ai/assistant/${existingAssistantId}`,
       {
@@ -160,16 +183,7 @@ export async function POST(request: Request) {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          name: agentName,
-          firstMessage,
-          model: modelPayload,
-          transcriber: transcriberConfig,
-          voice: voiceConfig,
-          startSpeakingPlan: { waitSeconds: 0 },
-          ...latencyConfig,
-          ...forwardingConfig,
-        }),
+        body: JSON.stringify(patchPayload),
       },
     );
 
@@ -186,21 +200,24 @@ export async function POST(request: Request) {
     console.log("[vapi/update-assistant] patched existing assistant:", assistantId);
   } else {
     // ── First time — POST to create a new, user-specific assistant ─────────────
+    const createPayload = {
+      name: agentName,
+      firstMessage,
+      model: modelPayload,
+      transcriber: transcriberConfig,
+      voice: voiceConfig,
+      startSpeakingPlan: { waitSeconds: 0 },
+      ...latencyConfig,
+      ...endCallConfig,
+    };
+    console.log("[vapi/update-assistant] POST payload:", JSON.stringify(createPayload, null, 2));
     const createRes = await fetch("https://api.vapi.ai/assistant", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        name: agentName,
-        firstMessage,
-        model: modelPayload,
-        transcriber: transcriberConfig,
-        voice: voiceConfig,
-        startSpeakingPlan: { waitSeconds: 0 },
-        ...latencyConfig,
-      }),
+      body: JSON.stringify(createPayload),
     });
 
     if (!createRes.ok) {

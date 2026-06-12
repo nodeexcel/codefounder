@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&display=swap');
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────
@@ -21,6 +22,7 @@
   --font-sans:     var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-heading:  var(--font-manrope), "Manrope", var(--font-inter), system-ui, sans-serif;
   --font-mono:     var(--font-geist-mono), "GeistMono", "Fira Code", monospace;
+  --font-cursive:  'Dancing Script', cursive;
 }
 
 /* ── DARK THEME ────────────────────────────── */
@@ -87,16 +89,16 @@
   color-scheme: light;
 
   /* Surfaces */
-  --background:    #F8F9FB;
+  --background:    #F5F2EB;
   --foreground:    #09090B;
-  --card:          #FFFFFF;
-  --card2:         #F4F5F7;
-  --card-elevated: #F8F9FB;
-  --card-hover:    #FAFBFC;
+  --card:          rgba(255,255,255,0.70);
+  --card2:         rgba(255,255,255,0.55);
+  --card-elevated: rgba(255,255,255,0.82);
+  --card-hover:    rgba(255,255,255,0.90);
 
-  /* Borders — solid and visible */
-  --border:        #E4E4E7;
-  --border2:       #D1D5DB;
+  /* Borders — soft on cream background */
+  --border:        rgba(0,0,0,0.08);
+  --border2:       rgba(0,0,0,0.13);
   --border-focus:  rgba(255,122,26,0.60);
 
   /* Surfaces (overlays) */
@@ -109,8 +111,8 @@
   --muted-low:     #A1A1AA;
 
   /* Navigation */
-  --sidebar-bg:    #FFFFFF;
-  --nav-bg:        rgba(248,249,251,0.90);
+  --sidebar-bg:    rgba(252,249,243,0.97);
+  --nav-bg:        rgba(245,242,235,0.88);
   --tooltip-bg:    #18181B;
 
   /* Semantic */
@@ -224,6 +226,11 @@ h4 { font-family: var(--font-heading); font-size: 1.25rem; font-weight: 600; let
 .cf-card:hover {
   box-shadow:    var(--shadow-card-hover);
   border-color:  var(--border2);
+}
+
+[data-theme="light"] .cf-card {
+  backdrop-filter:         blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
 }
 
 /* ── Premium input ─────────────────────────── */

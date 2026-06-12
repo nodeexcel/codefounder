@@ -10,7 +10,6 @@ export function WelcomeBanner() {
     return (
       <div
         className="rounded-2xl p-5 animate-pulse"
-        style={{ background: "var(--card)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}
       >
         <div className="flex items-center gap-4">
           <div className="h-12 w-12 rounded-xl shrink-0" style={{ background: "var(--surface2)" }} />
@@ -31,11 +30,7 @@ export function WelcomeBanner() {
   return (
     <div
       className="relative overflow-hidden rounded-2xl px-5 py-4"
-      style={{
-        background: "var(--card)",
-        border: "1px solid var(--border)",
-        boxShadow: "var(--shadow-sm)",
-      }}
+      style={{ background: "transparent" }}
     >
       {/* Top accent line */}
       <div
@@ -67,7 +62,8 @@ export function WelcomeBanner() {
             className="text-[17px] font-bold leading-snug"
             style={{ fontFamily: "var(--font-heading)", letterSpacing: "-0.02em", color: "var(--foreground)" }}
           >
-            Welcome back, {firstName}
+            Welcome back,{" "}
+            <span style={{ fontFamily: "var(--font-cursive)", color: "var(--accent)", fontWeight: 600 }}>{firstName}</span>
           </h2>
           <p className="mt-0.5 text-sm" style={{ color: "var(--muted)", fontFamily: "var(--font-sans)" }}>
             @{profile.username} · Your AI agents are ready
