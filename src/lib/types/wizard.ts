@@ -137,6 +137,7 @@ export interface VoiceSettings {
   calendarEmail: string;
   phoneOption: "new" | "forward" | "";
   phoneNumber: string;
+  languages: string[];
 }
 
 export interface WizardFormData {
@@ -246,6 +247,7 @@ export function createInitialWizardData(
       calendarEmail: "",
       phoneOption: "",
       phoneNumber: "",
+      languages: ["English"],
     },
     hr: createInitialHRSettings(),
     marketing: createInitialMarketingSettings(),

@@ -40,6 +40,14 @@ function extractText(buffer: Buffer, mimeType: string, filename: string): string
   return text.length > 50 ? text : `[${filename} uploaded]`;
 }
 
+function adminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  );
+}
+
 export async function POST(request: Request) {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -71,11 +79,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Only PDF, DOC, and TXT files are supported" }, { status: 400 });
   }
 
-  const adminSupabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
-  );
+  const adminSupabase = adminClient();
 
   const { data: session } = await adminSupabase
     .from("agent_wizard_sessions")
@@ -90,14 +94,97 @@ export async function POST(request: Request) {
 
   const bytes = await file.arrayBuffer();
   const content = extractText(Buffer.from(bytes), file.type, file.name);
+  const truncatedContent = content.slice(0, 100_000);
+
+  // Upload to Vapi Knowledge Base
+  let vapiKbId: string | null = null;
+  const vapiApiKey = process.env.VAPI_API_KEY;
+  if (vapiApiKey) {
+    try {
+      const vapiRes = await fetch("https://api.vapi.ai/knowledge-base", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${vapiApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: file.name, content: truncatedContent }),
+      });
+      if (vapiRes.ok) {
+        const vapiData = await vapiRes.json() as { id?: string };
+        vapiKbId = vapiData.id ?? null;
+      } else {
+        console.warn("[hr/upload-knowledge] Vapi KB upload failed:", await vapiRes.text());
+      }
+    } catch (err) {
+      console.warn("[hr/upload-knowledge] Vapi KB upload error:", err);
+    }
+  }
 
   const { error } = await adminSupabase.from("hr_knowledge_base").insert({
     user_id: user.id,
     agent_id: session.id,
     filename: file.name,
-    content: content.slice(0, 100_000),
+    content: truncatedContent,
+    ...(vapiKbId ? { vapi_knowledge_base_id: vapiKbId } : {}),
   });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true, filename: file.name });
+}
+
+export async function DELETE(request: Request) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
+  let body: { filename?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  if (!body.filename) {
+    return NextResponse.json({ error: "filename is required" }, { status: 400 });
+  }
+
+  const adminSupabase = adminClient();
+
+  // Fetch the row to get vapi_knowledge_base_id before deleting
+  const { data: row } = await adminSupabase
+    .from("hr_knowledge_base")
+    .select("id, vapi_knowledge_base_id")
+    .eq("user_id", user.id)
+    .eq("filename", body.filename)
+    .maybeSingle();
+
+  if (!row) {
+    return NextResponse.json({ error: "File not found" }, { status: 404 });
+  }
+
+  // Delete from Vapi Knowledge Base
+  const vapiApiKey = process.env.VAPI_API_KEY;
+  const vapiKbId = (row as { id: string; vapi_knowledge_base_id?: string | null }).vapi_knowledge_base_id;
+  if (vapiApiKey && vapiKbId) {
+    try {
+      const vapiRes = await fetch(`https://api.vapi.ai/knowledge-base/${vapiKbId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${vapiApiKey}` },
+      });
+      if (!vapiRes.ok) {
+        console.warn("[hr/upload-knowledge] Vapi KB delete failed:", await vapiRes.text());
+      }
+    } catch (err) {
+      console.warn("[hr/upload-knowledge] Vapi KB delete error:", err);
+    }
+  }
+
+  // Delete from Supabase
+  const { error } = await adminSupabase
+    .from("hr_knowledge_base")
+    .delete()
+    .eq("id", (row as { id: string }).id);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
 }

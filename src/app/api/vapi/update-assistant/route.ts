@@ -60,6 +60,17 @@ export async function POST(request: Request) {
   const existingAssistantId = sessionRow?.vapi_assistant_id ?? null;
   const sessionVoice = sessionRow?.voice_settings ?? null;
 
+  // Fetch knowledge base IDs for this user
+  const { data: kbRows } = await adminSupabase
+    .from("hr_knowledge_base")
+    .select("vapi_knowledge_base_id")
+    .eq("user_id", user.id)
+    .not("vapi_knowledge_base_id", "is", null);
+
+  const kbFileIds = (kbRows ?? [])
+    .map((r: { vapi_knowledge_base_id?: string | null }) => r.vapi_knowledge_base_id)
+    .filter((id): id is string => !!id);
+
   const systemPrompt = buildVapiSystemPrompt(body.wizardData);
   const agentName = body.wizardData.voice.agentName.trim();
   const businessName = body.wizardData.business.businessName.trim();
@@ -131,18 +142,20 @@ export async function POST(request: Request) {
     ? { forwardingPhoneNumber: forwardTo }
     : {};
 
+  const selectedLanguages = body.wizardData.voice.languages ?? ["English"];
+  const isMultiLang = selectedLanguages.length > 1;
+
   const transcriberConfig = {
     provider: "deepgram",
-    model: "nova-3",
-    language: "en",
+    model: "nova-2",
+    language: isMultiLang ? "multi" : "en",
     smartFormat: true,
-    endpointing: 200,
+    endpointing: 150,
   };
 
   const voiceConfig = {
-    provider: "cartesia",
-    voiceId: "a0e99841-438c-4a64-b679-ae501e7d6091",
-    speed: 1.1,
+    provider: "deepgram",
+    voiceId: "aura-asteria-en",
   };
 
   const latencyConfig = {
@@ -173,6 +186,7 @@ export async function POST(request: Request) {
       ...latencyConfig,
       ...endCallConfig,
       ...forwardingConfig,
+      ...(kbFileIds.length > 0 ? { knowledgeBase: { fileIds: kbFileIds } } : {}),
     };
     console.log("[vapi/update-assistant] PATCH payload:", JSON.stringify(patchPayload, null, 2));
     const patchRes = await fetch(
@@ -209,6 +223,7 @@ export async function POST(request: Request) {
       startSpeakingPlan: { waitSeconds: 0 },
       ...latencyConfig,
       ...endCallConfig,
+      ...(kbFileIds.length > 0 ? { knowledgeBase: { fileIds: kbFileIds } } : {}),
     };
     console.log("[vapi/update-assistant] POST payload:", JSON.stringify(createPayload, null, 2));
     const createRes = await fetch("https://api.vapi.ai/assistant", {

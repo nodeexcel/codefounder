@@ -1330,6 +1330,51 @@ function WizardContent() {
                 value={data.voice.forwardTo}
                 onChange={(e) => updateVoice({ forwardTo: e.target.value })}
               />
+
+              <div>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label className="text-sm font-medium text-[#AAAAAA]">Languages Supported</label>
+                  <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide" style={{ background: "var(--accent-glow)", color: "var(--accent)", border: "1px solid rgba(255,122,26,0.2)" }}>Pro plan</span>
+                </div>
+                <div
+                  className="space-y-2 rounded-lg p-3"
+                  style={{ background: "var(--card-elevated)", border: "1px solid var(--border)" }}
+                >
+                  {(["English", "Hindi", "Urdu", "Punjabi", "French"] as const).map((lang) => {
+                    const isEnglish = lang === "English";
+                    const checked = isEnglish || (data.voice.languages ?? ["English"]).includes(lang);
+                    return (
+                      <label
+                        key={lang}
+                        className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-all"
+                        style={{
+                          background: checked ? "var(--accent-glow)" : "var(--surface)",
+                          border: `1px solid ${checked ? "rgba(255,122,26,0.3)" : "var(--border)"}`,
+                          cursor: isEnglish ? "not-allowed" : "pointer",
+                          opacity: isEnglish ? 0.7 : 1,
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={isEnglish}
+                          onChange={(e) => {
+                            const current = data.voice.languages ?? ["English"];
+                            const next = e.target.checked
+                              ? [...current, lang]
+                              : current.filter((l) => l !== lang);
+                            updateVoice({ languages: next.length === 0 ? ["English"] : next });
+                          }}
+                          className="accent-[var(--accent)]"
+                        />
+                        <span className="text-sm font-medium text-white">{lang}</span>
+                        {isEnglish && <span className="ml-auto text-xs text-[#555]">default</span>}
+                      </label>
+                    );
+                  })}
+                </div>
+                <p className="mt-1.5 text-xs text-[#555]">Multi-language available on Pro plan</p>
+              </div>
             </div>
           )}
 
