@@ -80,12 +80,53 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-black px-4 py-12">
-      <div className="mb-8">
-        <Logo href="/" size="lg" />
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-black px-4 py-12 text-white">
+      <style>{`
+        @keyframes resetBrandLift {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
+        }
+        @keyframes resetBrandGlow {
+          0%, 100% { filter: drop-shadow(0 0 12px rgba(255,122,26,0.22)) drop-shadow(0 0 24px rgba(255,122,26,0.12)); }
+          50% { filter: drop-shadow(0 0 18px rgba(255,122,26,0.36)) drop-shadow(0 0 34px rgba(255,122,26,0.18)); }
+        }
+      `}</style>
+
+      <div className="absolute left-6 top-1/2 z-0 flex -translate-y-1/2 flex-col items-start gap-4">
+        <div className="flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/codefounder-logo.png"
+            alt="CodeFounder logo"
+            className="h-14 w-14 object-contain"
+            style={{ animation: "resetBrandLift 4.8s ease-in-out infinite, resetBrandGlow 3.8s ease-in-out infinite" }}
+          />
+          <span
+            className="italic"
+            style={{
+              fontFamily: "Georgia, 'Times New Roman', serif",
+              fontSize: "3rem",
+              fontWeight: 900,
+              letterSpacing: "-1.5px",
+              lineHeight: 0.95,
+              color: "#FF7A1A",
+              textShadow: "0 0 14px rgba(255,122,26,0.35), 0 0 30px rgba(255,122,26,0.18)",
+              animation: "resetBrandLift 4s ease-in-out infinite, resetBrandGlow 3.8s ease-in-out infinite",
+            }}
+          >
+            CodeFounder
+          </span>
+        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/loginpage.png"
+          alt="CodeFounder illustration"
+          className="w-72 max-w-full object-contain"
+          style={{ animation: "resetBrandLift 4.8s ease-in-out infinite, resetBrandGlow 4.4s ease-in-out infinite" }}
+        />
       </div>
 
-      <Card className="w-full max-w-md" padding="lg">
+      <Card className="relative z-10 w-full max-w-md border border-white/10 bg-black/80 backdrop-blur-sm" padding="lg">
         {/* Waiting for PASSWORD_RECOVERY event */}
         {!ready && !expired && (
           <div className="py-8 text-center">

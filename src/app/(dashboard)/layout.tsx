@@ -9,9 +9,12 @@ export default function DashboardLayout({
 }) {
   return (
     <SidebarProvider>
-      <div className="min-h-screen" style={{ background: "var(--background)", color: "var(--foreground)" }}>
-        <Sidebar />
-        <ContentShift>{children}</ContentShift>
+      <div className="relative min-h-screen overflow-hidden" style={{ background: "var(--background)", color: "var(--foreground)" }}>
+        <div className="dashboard-backdrop" aria-hidden />
+        <div className="relative z-10">
+          <Sidebar />
+          <ContentShift>{children}</ContentShift>
+        </div>
       </div>
     </SidebarProvider>
   );

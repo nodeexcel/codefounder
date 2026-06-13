@@ -4,9 +4,31 @@ import { KpiWidget } from "@/components/dashboard/KpiWidget";
 import { PlanWidget } from "@/components/dashboard/PlanWidget";
 import { LiveAgentsWidget } from "@/components/dashboard/LiveAgentsWidget";
 import { RecentCallsWidget } from "@/components/dashboard/RecentCallsWidget";
+import { AgentSnapshotSection, type AgentSnapshotBlock } from "@/components/dashboard/AgentSnapshotSection";
 import { Button } from "@/components/ui/Button";
 import { AGENTS, type AgentType } from "@/lib/agents";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+type WizardSessionLite = {
+  id: string;
+  agent_type: string;
+  status: string;
+  current_step: number | null;
+  business_details?: { businessName?: string } | null;
+  voice_settings?: Record<string, unknown> | null;
+  vapi_assistant_id?: string | null;
+};
+
+type CallLogLite = {
+  agent_id: string | null;
+  created_at: string;
+};
+
+type CRMContactLite = {
+  company: string | null;
+  pipeline_stage: string | null;
+  created_at: string;
+};
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -34,6 +56,10 @@ export default async function DashboardPage() {
     { data: durationRows },
     { count: leadsCount },
     { data: liveSessions },
+    { data: wizardSessions },
+    { count: crmContactsCount },
+    { data: monthlyCallRows },
+    { data: crmContactRows },
   ] = await Promise.all([
     supabase
       .from("subscriptions")
@@ -66,6 +92,25 @@ export default async function DashboardPage() {
       .select("agent_type")
       .eq("user_id", userId)
       .eq("status", "live"),
+    supabase
+      .from("agent_wizard_sessions")
+      .select("id, agent_type, status, current_step, business_details, voice_settings, vapi_assistant_id")
+      .eq("user_id", userId),
+    supabase
+      .from("crm_contacts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId),
+    supabase
+      .from("call_logs")
+      .select("agent_id, created_at")
+      .eq("user_id", userId)
+      .gte("created_at", startOfMonth.toISOString()),
+    supabase
+      .from("crm_contacts")
+      .select("company, pipeline_stage, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(250),
   ]);
 
   const activeAgents = (liveSessions ?? [])
@@ -80,6 +125,247 @@ export default async function DashboardPage() {
   const callPct = Math.min(100, Math.round((callCount / 500) * 100));
   const minuteLimit = 20 * 60;
   const minutePct = Math.min(100, Math.round((totalSeconds / minuteLimit) * 100));
+  const crmCount = crmContactsCount ?? 0;
+  const now = new Date();
+
+  const allSessions = (wizardSessions ?? []) as WizardSessionLite[];
+  const sessionsByType = {
+    voice: allSessions.filter((session) => session.agent_type === "voice"),
+    hr: allSessions.filter((session) => session.agent_type === "hr"),
+    marketing: allSessions.filter((session) => session.agent_type === "marketing"),
+  };
+
+  const monthlyCalls = (monthlyCallRows ?? []) as CallLogLite[];
+  const callCountByAssistant = monthlyCalls.reduce<Record<string, number>>((acc, row) => {
+    const key = row.agent_id ?? "unknown";
+    acc[key] = (acc[key] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const hrSessionIds = sessionsByType.hr.map((session) => session.id);
+  const hrKnowledgeCountBySession: Record<string, number> = {};
+  if (hrSessionIds.length > 0) {
+    const hrKnowledgeCounts = await Promise.all(
+      hrSessionIds.map(async (sessionId) => {
+        const { count } = await supabase
+          .from("hr_knowledge_base")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .eq("agent_id", sessionId);
+        return { sessionId, count: count ?? 0 };
+      }),
+    );
+    for (const row of hrKnowledgeCounts) {
+      hrKnowledgeCountBySession[row.sessionId] = row.count;
+    }
+  }
+
+  const stepMaxByType: Record<AgentType, number> = {
+    voice: 5,
+    hr: 4,
+    marketing: 4,
+    crm: 3,
+  };
+
+  const accentByType: Record<AgentType, string> = {
+    voice: "#3B82F6",
+    hr: "#14B8A6",
+    marketing: "#F59E0B",
+    crm: "#A855F7",
+  };
+
+  const hrefByType: Record<AgentType, string> = {
+    voice: "/calls",
+    hr: "/hr",
+    marketing: "/marketing",
+    crm: "/crm",
+  };
+
+  const voiceEntries = sessionsByType.voice.map((session) => {
+    const settings = (session.voice_settings ?? {}) as { agentName?: string };
+    const businessName = session.business_details?.businessName?.trim() || "Untitled Business";
+    const assistantId = session.vapi_assistant_id ?? "";
+    const assistantCalls = assistantId ? (callCountByAssistant[assistantId] ?? 0) : callCount;
+    const maxStep = stepMaxByType.voice;
+    const currentStep = Math.max(0, session.current_step ?? 0);
+
+    return {
+      id: session.id,
+      businessName,
+      agentName: settings.agentName?.trim() || "Voice Agent",
+      status: session.status === "live" ? "Live" : "Draft",
+      progressPct: session.status === "live" ? 100 : Math.min(100, Math.round((currentStep / maxStep) * 100)),
+      metrics: [
+        `${assistantCalls} call${assistantCalls === 1 ? "" : "s"} this month`,
+        `Setup step ${Math.min(maxStep, currentStep) + 1}/${maxStep + 1}`,
+      ],
+      href: hrefByType.voice,
+    };
+  });
+  if (voiceEntries.length === 0) {
+    voiceEntries.push({
+      id: "voice-empty",
+      businessName: "No voice business",
+      agentName: "Voice Agent",
+      status: "Not setup",
+      progressPct: 0,
+      metrics: [
+        `${callCount} call${callCount === 1 ? "" : "s"} this month`,
+        "Complete setup wizard to go live",
+      ],
+      href: hrefByType.voice,
+    });
+  }
+
+  const hrEntries = sessionsByType.hr.map((session) => {
+    const settings = (session.voice_settings ?? {}) as { agentName?: string; leaveTypes?: unknown[] };
+    const businessName = session.business_details?.businessName?.trim() || "Untitled Business";
+    const leaveTypes = Array.isArray(settings.leaveTypes) ? settings.leaveTypes.length : 0;
+    const docs = hrKnowledgeCountBySession[session.id] ?? 0;
+    const maxStep = stepMaxByType.hr;
+    const currentStep = Math.max(0, session.current_step ?? 0);
+
+    return {
+      id: session.id,
+      businessName,
+      agentName: settings.agentName?.trim() || "HR Assistant",
+      status: session.status === "live" ? "Live" : "Draft",
+      progressPct: session.status === "live" ? 100 : Math.min(100, Math.round((currentStep / maxStep) * 100)),
+      metrics: [
+        `${docs} policy doc${docs === 1 ? "" : "s"}`,
+        `${leaveTypes} leave type${leaveTypes === 1 ? "" : "s"}`,
+      ],
+      href: hrefByType.hr,
+    };
+  });
+  if (hrEntries.length === 0) {
+    hrEntries.push({
+      id: "hr-empty",
+      businessName: "No HR business",
+      agentName: "HR Assistant",
+      status: "Not setup",
+      progressPct: 0,
+      metrics: ["No policy docs uploaded", "Complete setup wizard to go live"],
+      href: hrefByType.hr,
+    });
+  }
+
+  const marketingEntries = sessionsByType.marketing.map((session) => {
+    const settings = (session.voice_settings ?? {}) as { agentName?: string; platforms?: unknown[]; brandTone?: string };
+    const businessName = session.business_details?.businessName?.trim() || "Untitled Business";
+    const platforms = Array.isArray(settings.platforms)
+      ? settings.platforms.map((value) => String(value))
+      : [];
+    const maxStep = stepMaxByType.marketing;
+    const currentStep = Math.max(0, session.current_step ?? 0);
+
+    return {
+      id: session.id,
+      businessName,
+      agentName: settings.agentName?.trim() || "Marketing Agent",
+      status: session.status === "live" ? "Live" : "Draft",
+      progressPct: session.status === "live" ? 100 : Math.min(100, Math.round((currentStep / maxStep) * 100)),
+      metrics: [
+        platforms.length > 0
+          ? `${platforms.join(", ")} connected`
+          : "No accounts connected",
+        settings.brandTone ? `Tone: ${settings.brandTone}` : "Tone not selected",
+      ],
+      href: hrefByType.marketing,
+    };
+  });
+  if (marketingEntries.length === 0) {
+    marketingEntries.push({
+      id: "marketing-empty",
+      businessName: "No marketing business",
+      agentName: "Marketing Agent",
+      status: "Not setup",
+      progressPct: 0,
+      metrics: ["No accounts connected", "Complete setup wizard to go live"],
+      href: hrefByType.marketing,
+    });
+  }
+
+  const contacts = (crmContactRows ?? []) as CRMContactLite[];
+  const crmByCompany = contacts.reduce<Record<string, { total: number; newLeads: number }>>((acc, row) => {
+    const company = row.company?.trim() || "Unassigned";
+    if (!acc[company]) {
+      acc[company] = { total: 0, newLeads: 0 };
+    }
+    acc[company].total += 1;
+    if ((row.pipeline_stage ?? "").toLowerCase() === "new lead") {
+      acc[company].newLeads += 1;
+    }
+    return acc;
+  }, {});
+
+  const monthStartMs = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const crmByCompanySorted = Object.entries(crmByCompany)
+    .sort((a, b) => b[1].total - a[1].total)
+    .slice(0, 8);
+
+  const crmEntries = crmByCompanySorted.map(([company, stats], index) => {
+    const thisMonth = contacts.filter((row) => {
+      const rowCompany = row.company?.trim() || "Unassigned";
+      return rowCompany === company && new Date(row.created_at).getTime() >= monthStartMs;
+    }).length;
+
+    return {
+      id: `crm-${index}`,
+      businessName: company,
+      agentName: "CRM Agent",
+      status: stats.total > 0 ? "Active" : "Not setup",
+      progressPct: crmCount > 0 ? Math.max(10, Math.min(100, Math.round((stats.total / crmCount) * 100))) : 0,
+      metrics: [
+        `${stats.total} contact${stats.total === 1 ? "" : "s"}`,
+        `${stats.newLeads} new lead${stats.newLeads === 1 ? "" : "s"}`,
+        `${thisMonth} added this month`,
+      ],
+      href: hrefByType.crm,
+    };
+  });
+  if (crmEntries.length === 0) {
+    crmEntries.push({
+      id: "crm-empty",
+      businessName: "No CRM business",
+      agentName: "CRM Agent",
+      status: "Not setup",
+      progressPct: 0,
+      metrics: ["0 contacts", "Import leads from voice or forms"],
+      href: hrefByType.crm,
+    });
+  }
+
+  const agentSnapshotBlocks: AgentSnapshotBlock[] = [
+    {
+      id: "voice",
+      title: "Voice",
+      icon: "📞",
+      accent: accentByType.voice,
+      entries: voiceEntries,
+    },
+    {
+      id: "hr",
+      title: "HR",
+      icon: "👥",
+      accent: accentByType.hr,
+      entries: hrEntries,
+    },
+    {
+      id: "marketing",
+      title: "Marketing",
+      icon: "📱",
+      accent: accentByType.marketing,
+      entries: marketingEntries,
+    },
+    {
+      id: "crm",
+      title: "CRM",
+      icon: "🎯",
+      accent: accentByType.crm,
+      entries: crmEntries,
+    },
+  ];
 
   const usageStats = [
     {
@@ -151,41 +437,47 @@ export default async function DashboardPage() {
     <>
       <DashboardNavbar
         title="Dashboard"
-        subtitle="Overview of your AI agents and activity"
       />
 
-      <div className="space-y-4 p-4 sm:p-6 lg:p-8">
-        <WelcomeBanner />
+      <div className="flex min-h-[calc(100vh-56px)] flex-col p-4 sm:p-6 lg:p-8">
+        <div className="space-y-4">
+          <WelcomeBanner />
 
-        {/* KPI widgets */}
-        <div>
-          <SectionLabel>Usage Overview</SectionLabel>
-          <div className="flex flex-wrap gap-2">
-            {usageStats.map((stat) => (
-              <KpiWidget key={stat.label} {...stat} />
-            ))}
+          {/* KPI widgets */}
+          <div>
+            <SectionLabel>Usage Overview</SectionLabel>
+            <div className="flex flex-wrap gap-2">
+              {usageStats.map((stat) => (
+                <KpiWidget key={stat.label} {...stat} />
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Platform widgets */}
-        <div>
-          <SectionLabel>Platform</SectionLabel>
-          <div className="flex flex-wrap gap-2">
-            <PlanWidget
-              plan={currentPlan}
-              trialDaysRemaining={trialDaysRemaining}
-              status={subscription?.status}
-            />
-            <LiveAgentsWidget
-              agents={activeAgents.map((a) => ({ id: a.id, name: a.name, icon: a.icon }))}
-            />
-            <RecentCallsWidget calls={callLogs ?? []} />
+          {/* Platform widgets */}
+          <div>
+            <SectionLabel>Platform</SectionLabel>
+            <div className="flex flex-wrap gap-2">
+              <PlanWidget
+                plan={currentPlan}
+                trialDaysRemaining={trialDaysRemaining}
+                status={subscription?.status}
+              />
+              <LiveAgentsWidget
+                agents={activeAgents.map((a) => ({ id: a.id, name: a.name, icon: a.icon }))}
+              />
+              <RecentCallsWidget calls={callLogs ?? []} />
+            </div>
+          </div>
+
+          <div>
+            <SectionLabel>Agent Snapshot</SectionLabel>
+            <AgentSnapshotSection blocks={agentSnapshotBlocks} />
           </div>
         </div>
 
         {/* CTA banner */}
         <div
-          className="relative overflow-hidden rounded-xl px-4 py-3.5"
+          className="relative mt-auto overflow-hidden rounded-xl px-4 py-3.5"
           style={{
             background: "linear-gradient(135deg, var(--card2) 0%, var(--card) 100%)",
             border: "1px solid rgba(255,122,26,0.18)",

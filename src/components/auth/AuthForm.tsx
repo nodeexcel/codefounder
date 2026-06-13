@@ -276,31 +276,55 @@ export function AuthForm({ mode }: AuthFormProps) {
   return (
     <>
       <style>{`
-        @keyframes authGridMove {
-          from { background-position: 0 0; }
-          to { background-position: 60px 60px; }
+        @keyframes authBorderSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
         @keyframes authCardIn {
           from { opacity: 0; transform: translateY(36px) scale(0.97); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        @keyframes authSparkFloat {
-          0% { transform: translateY(0) rotate(0deg); opacity: 0; }
-          10% { opacity: 1; }
-          90% { opacity: 0.4; }
-          100% { transform: translateY(-100px) rotate(720deg); opacity: 0; }
-        }
-        @keyframes authTwinkle {
-          0%, 100% { opacity: 0; transform: scale(0); }
-          50% { opacity: 1; transform: scale(1); }
-        }
         @keyframes authGlowPulse {
-          0%, 100% { box-shadow: 0 0 40px rgba(255,122,26,0.1), 0 24px 80px rgba(0,0,0,0.65); }
-          50% { box-shadow: 0 0 80px rgba(255,122,26,0.2), 0 24px 80px rgba(0,0,0,0.65); }
+          0%, 100% { box-shadow: 0 0 18px rgba(255,122,26,0.05), 0 16px 40px rgba(0,0,0,0.28); }
+          50% { box-shadow: 0 0 26px rgba(255,122,26,0.08), 0 16px 40px rgba(0,0,0,0.28); }
+        }
+        @keyframes authBrandLift {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
+        }
+        @keyframes authBrandGlow {
+          0%, 100% { filter: drop-shadow(0 0 12px rgba(255,122,26,0.22)) drop-shadow(0 0 24px rgba(255,122,26,0.12)); }
+          50% { filter: drop-shadow(0 0 18px rgba(255,122,26,0.36)) drop-shadow(0 0 34px rgba(255,122,26,0.18)); }
+        }
+        .signup-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          gap: 10px;
+        }
+        @media (max-width: 720px) {
+          .signup-grid {
+            grid-template-columns: minmax(0, 1fr);
+          }
         }
         .auth-card {
           animation: authCardIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both,
-                     authGlowPulse 4s ease-in-out 0.7s infinite;
+                     authGlowPulse 7s ease-in-out 0.7s infinite;
+          isolation: isolate;
+        }
+        .auth-card::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          padding: 1px;
+          border-radius: inherit;
+          background: conic-gradient(from 0deg, rgba(255,122,26,0.0), rgba(255,122,26,0.85), rgba(245,165,90,0.65), rgba(255,122,26,0.0));
+          animation: authBorderSpin 6s linear infinite;
+          -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+          pointer-events: none;
+          opacity: 0.8;
+          z-index: -1;
         }
         .auth-google-btn:hover:not(:disabled) {
           border-color: rgba(255,122,26,0.4) !important;
@@ -340,97 +364,79 @@ export function AuthForm({ mode }: AuthFormProps) {
         background: "var(--background)",
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
+        alignItems: "flex-end",
         justifyContent: "center",
-        padding: "48px 16px",
+        padding: "48px clamp(16px, 4vw, 72px)",
         overflow: "hidden",
         fontFamily: "var(--font-sans)",
       }}>
-        {/* Perspective grid */}
+        {/* Left brand panel */}
         <div style={{
           position: "absolute",
-          inset: 0,
-          backgroundImage: "linear-gradient(var(--border2) 1px, transparent 1px), linear-gradient(90deg, var(--border2) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
-          maskImage: "radial-gradient(ellipse 90% 90% at 50% 50%, black 0%, transparent 72%)",
-          WebkitMaskImage: "radial-gradient(ellipse 90% 90% at 50% 50%, black 0%, transparent 72%)",
-          animation: "authGridMove 8s linear infinite",
-          pointerEvents: "none",
-          opacity: 0.5,
-        }} />
-
-        {/* Ambient orange glow */}
-        <div style={{
-          position: "absolute",
-          inset: 0,
-          background: "radial-gradient(ellipse 70% 50% at 50% 50%, rgba(255,122,26,0.07) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }} />
-
-        {/* Focused glow behind card */}
-        <div style={{
-          position: "absolute",
-          width: "560px",
-          height: "300px",
-          background: "radial-gradient(ellipse at center, rgba(255,122,26,0.18) 0%, transparent 70%)",
-          borderRadius: "50%",
+          left: "clamp(20px, 8vw, 140px)",
           top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          filter: "blur(50px)",
-          pointerEvents: "none",
-        }} />
-
-        {/* Spark particles */}
-        {[
-          { w: 3, h: 3, c: "#FF7A1A", t: "22%", l: "8%", dur: "4s", del: "0s", shadow: "0 0 6px 2px rgba(255,122,26,0.8)" },
-          { w: 2, h: 2, c: "#FF9B4A", t: "68%", l: "13%", dur: "5s", del: "0.7s", shadow: "0 0 4px 2px rgba(245,165,90,0.7)" },
-          { w: 4, h: 4, c: "#FF7A1A", t: "38%", l: "6%", dur: "3.5s", del: "1.2s", shadow: "0 0 8px 3px rgba(255,122,26,0.6)" },
-          { w: 3, h: 3, c: "#FF9B4A", t: "18%", l: "83%", dur: "4.5s", del: "2s", shadow: "0 0 6px 2px rgba(245,165,90,0.8)" },
-          { w: 2, h: 2, c: "#FF7A1A", t: "62%", l: "88%", dur: "3s", del: "0.5s", shadow: "0 0 4px 2px rgba(255,122,26,0.7)" },
-          { w: 3, h: 3, c: "#FF7A1A", t: "78%", l: "75%", dur: "4s", del: "2.5s", shadow: "0 0 6px 2px rgba(255,122,26,0.9)" },
-        ].map((s, i) => (
-          <div key={i} style={{
-            position: "absolute",
-            width: `${s.w}px`,
-            height: `${s.h}px`,
-            background: s.c,
-            top: s.t,
-            left: s.l,
-            borderRadius: "50%",
-            animation: `authSparkFloat ${s.dur} ease-in-out ${s.del} infinite`,
-            boxShadow: s.shadow,
-            pointerEvents: "none",
-          }} />
-        ))}
-        {[
-          { t: "20%", l: "68%", dur: "2.5s", del: "0.2s" },
-          { t: "74%", l: "48%", dur: "3s", del: "1s" },
-          { t: "44%", l: "91%", dur: "2s", del: "0.8s" },
-        ].map((s, i) => (
-          <div key={i} style={{
-            position: "absolute",
-            width: "5px",
-            height: "5px",
-            background: "radial-gradient(circle, #fff, transparent)",
-            borderRadius: "50%",
-            top: s.t,
-            left: s.l,
-            animation: `authTwinkle ${s.dur} ease-in-out ${s.del} infinite`,
-            pointerEvents: "none",
-          }} />
-        ))}
+          transform: "translateY(-50%)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-start",
+          gap: "16px",
+          zIndex: 5,
+          maxWidth: "360px",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/codefounder-logo.png"
+              style={{
+                width: "56px",
+                height: "56px",
+                objectFit: "contain",
+                animation: "authBrandLift 4.8s ease-in-out infinite, authBrandGlow 3.8s ease-in-out infinite",
+              }}
+              alt="CodeFounder logo"
+            />
+            <span style={{
+              fontFamily: "Georgia, 'Times New Roman', serif",
+              fontSize: "48px",
+              fontWeight: 900,
+              fontStyle: "italic",
+              color: "#FF7A1A",
+              letterSpacing: "-1.4px",
+              lineHeight: 0.95,
+              textShadow: "0 0 14px rgba(255,122,26,0.35), 0 0 30px rgba(255,122,26,0.18)",
+              animation: "authBrandLift 4s ease-in-out infinite, authBrandGlow 3.8s ease-in-out infinite",
+            }}>
+              CodeFounder
+            </span>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/loginpage.png"
+            style={{
+              width: "280px",
+              maxWidth: "100%",
+              height: "auto",
+              objectFit: "contain",
+              filter: "drop-shadow(0 0 14px rgba(255,122,26,0.22)) drop-shadow(0 0 28px rgba(255,122,26,0.12))",
+              animation: "authBrandLift 4.8s ease-in-out infinite, authBrandGlow 4.4s ease-in-out infinite",
+            }}
+            alt="CodeFounder illustration"
+          />
+        </div>
 
         {/* Auth card */}
         <div className="auth-card" style={{
           position: "relative",
           width: "100%",
-          maxWidth: "440px",
-          background: "var(--card)",
-          border: "1px solid var(--border2)",
+          maxWidth: "420px",
+          background: "transparent",
+          border: "1px solid rgba(255,255,255,0.14)",
           borderRadius: "20px",
-          padding: "40px",
+          padding: "28px",
           zIndex: 10,
+          marginRight: "clamp(0px, 2vw, 20px)",
+          maxHeight: "calc(100vh - 36px)",
+          overflow: "hidden",
         }}>
           {/* Top orange gradient line */}
           <div style={{
@@ -443,30 +449,8 @@ export function AuthForm({ mode }: AuthFormProps) {
             borderRadius: "20px 20px 0 0",
           }} />
 
-          {/* Logo */}
-          <div style={{ textAlign: "center", marginBottom: "30px" }}>
-            <Link href="/" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "12px" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/codefounder-logo.png"
-                style={{ height: "44px", width: "44px", objectFit: "contain", mixBlendMode: "screen" }}
-                alt=""
-              />
-              <span style={{
-                fontFamily: "var(--font-heading)",
-                fontSize: "26px",
-                fontWeight: 800,
-                fontStyle: "italic",
-                color: "#ffffff",
-                letterSpacing: "-0.5px",
-              }}>
-                CodeFounder
-              </span>
-            </Link>
-          </div>
-
           {/* Badge + heading */}
-          <div style={{ marginBottom: "26px" }}>
+          <div style={{ marginBottom: "18px" }}>
             <div style={{
               display: "inline-flex",
               alignItems: "center",
@@ -474,25 +458,26 @@ export function AuthForm({ mode }: AuthFormProps) {
               background: "rgba(255,122,26,0.1)",
               border: "1px solid rgba(255,122,26,0.25)",
               color: "var(--accent-light)",
-              padding: "4px 14px",
+              padding: "3px 12px",
               borderRadius: "100px",
               fontSize: "11px",
               fontWeight: 600,
               letterSpacing: "2.5px",
               textTransform: "uppercase" as const,
-              marginBottom: "14px",
+              marginBottom: "10px",
             }}>
               <span style={{ width: "6px", height: "6px", background: "var(--accent)", borderRadius: "50%", display: "inline-block", flexShrink: 0 }} />
               {isLogin ? "Secure Login" : "Get Started Free"}
             </div>
             <h1 style={{
               fontFamily: "var(--font-heading)",
-              fontSize: "28px",
+              fontSize: "24px",
               fontWeight: 800,
               color: "var(--foreground)",
-              marginBottom: "6px",
-              lineHeight: 1.15,
+              background: "transparent",
+              lineHeight: 1.1,
               letterSpacing: "-0.025em",
+              marginBottom: "4px",
             }}>
               {isLogin ? "Welcome back" : "Create your account"}
             </h1>
@@ -552,9 +537,9 @@ export function AuthForm({ mode }: AuthFormProps) {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleEmailAuth} noValidate style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <form onSubmit={handleEmailAuth} noValidate style={{ display: "flex", flexDirection: "column", gap: isLogin ? "16px" : "12px" }}>
             {!isLogin && (
-              <>
+              <div className="signup-grid">
                 <AuthField
                   label="Full name"
                   type="text"
@@ -586,55 +571,86 @@ export function AuthForm({ mode }: AuthFormProps) {
                   autoComplete="username"
                   disabled={loading}
                 />
-              </>
+                <AuthField
+                  label="Email"
+                  type="email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => markTouched("email")}
+                  error={showError("email")}
+                  valid={isFieldValid("email")}
+                  touched={!!touched.email}
+                  autoComplete="email"
+                  disabled={loading}
+                />
+                <div>
+                  <AuthField
+                    label="Password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value.replace(/\s/g, ""))}
+                    onBlur={() => markTouched("password")}
+                    error={showError("password")}
+                    valid={isFieldValid("password")}
+                    touched={!!touched.password}
+                    showPasswordToggle
+                    autoComplete="new-password"
+                    disabled={loading}
+                  />
+                  {password.length > 0 && (
+                    <div style={{ marginTop: "8px" }}>
+                      <PasswordStrengthIndicator password={password} />
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
 
-            <AuthField
-              label="Email"
-              type="email"
-              placeholder="you@company.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onBlur={() => markTouched("email")}
-              error={showError("email")}
-              valid={isFieldValid("email")}
-              touched={!!touched.email}
-              autoComplete="email"
-              disabled={loading}
-            />
+            {isLogin && (
+              <>
+                <AuthField
+                  label="Email"
+                  type="email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => markTouched("email")}
+                  error={showError("email")}
+                  valid={isFieldValid("email")}
+                  touched={!!touched.email}
+                  autoComplete="email"
+                  disabled={loading}
+                />
 
-            <div>
-              <AuthField
-                label="Password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value.replace(/\s/g, ""))}
-                onBlur={() => markTouched("password")}
-                error={showError("password")}
-                valid={isFieldValid("password")}
-                touched={!!touched.password}
-                showPasswordToggle
-                autoComplete={isLogin ? "current-password" : "new-password"}
-                disabled={loading}
-              />
-              {!isLogin && password.length > 0 && (
-                <div style={{ marginTop: "8px" }}>
-                  <PasswordStrengthIndicator password={password} />
+                <div>
+                  <AuthField
+                    label="Password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value.replace(/\s/g, ""))}
+                    onBlur={() => markTouched("password")}
+                    error={showError("password")}
+                    valid={isFieldValid("password")}
+                    touched={!!touched.password}
+                    showPasswordToggle
+                    autoComplete="current-password"
+                    disabled={loading}
+                  />
+                  <div style={{ textAlign: "right", marginTop: "8px" }}>
+                    <Link
+                      href="/forgot-password"
+                      className="auth-forgot"
+                      style={{ fontSize: "12px", color: "#666", textDecoration: "none", transition: "color 0.2s" }}
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
                 </div>
-              )}
-              {isLogin && (
-                <div style={{ textAlign: "right", marginTop: "8px" }}>
-                  <Link
-                    href="/forgot-password"
-                    className="auth-forgot"
-                    style={{ fontSize: "12px", color: "#666", textDecoration: "none", transition: "color 0.2s" }}
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-              )}
-            </div>
+              </>
+            )}
 
             {!isLogin && (
               <AuthField
@@ -657,7 +673,7 @@ export function AuthForm({ mode }: AuthFormProps) {
 
             {/* Legal consent checkbox — signup only */}
             {!isLogin && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
                 <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", cursor: loading ? "not-allowed" : "pointer" }}>
                   <div style={{ position: "relative", flexShrink: 0, marginTop: "2px" }}>
                     <input
@@ -743,13 +759,13 @@ export function AuthForm({ mode }: AuthFormProps) {
                 </label>
 
                 {termsTouched && !termsAccepted && (
-                  <p style={{ marginTop: "6px", paddingLeft: "27px", fontSize: "12px", color: "#f87171" }}>
+                  <p style={{ marginTop: "4px", paddingLeft: "27px", fontSize: "12px", color: "#f87171" }}>
                     You must agree to the terms to continue
                   </p>
                 )}
 
                 <p style={{
-                  marginTop: "8px",
+                  marginTop: "4px",
                   paddingLeft: "27px",
                   fontSize: "11px",
                   color: "var(--muted-low)",
@@ -796,7 +812,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 opacity: loading || !formValid ? 0.55 : 1,
                 boxShadow: "0 4px 20px rgba(255,122,26,0.28)",
                 transition: "all 0.2s",
-                marginTop: "4px",
+                marginTop: isLogin ? "4px" : "0px",
               }}
             >
               {loading

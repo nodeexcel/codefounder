@@ -190,7 +190,12 @@ export function Sidebar() {
               />
               <span
                 className="font-bold text-[17px] tracking-tight whitespace-nowrap"
-                style={{ fontFamily: "var(--font-heading)", letterSpacing: "-0.025em", color: "var(--foreground)" }}
+                style={{
+                  fontFamily: "Georgia, 'Times New Roman', serif",
+                  fontStyle: "italic",
+                  letterSpacing: "-0.025em",
+                  color: "var(--foreground)",
+                }}
               >
                 Code<span style={{ color: "var(--accent)" }}>Founder</span>
               </span>

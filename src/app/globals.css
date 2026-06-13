@@ -318,6 +318,77 @@ h4 { font-family: var(--font-heading); font-size: 1.25rem; font-weight: 600; let
 
 .landing-delay-100 { animation-delay: 0.1s; }
 .landing-delay-200 { animation-delay: 0.2s; }
+
+/* ─────────────────────────────────────────────
+   DASHBOARD BACKDROP
+───────────────────────────────────────────── */
+
+@keyframes dashboard-orb-float {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(0, -18px, 0) scale(1.04); }
+}
+
+@keyframes dashboard-orb-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(18px, 12px, 0) scale(1.06); }
+}
+
+.dashboard-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background: var(--background);
+}
+
+.dashboard-backdrop::before,
+.dashboard-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: -15%;
+  pointer-events: none;
+}
+
+.dashboard-backdrop::before {
+  background:
+    radial-gradient(ellipse at 15% 12%, rgba(255,122,26,0.08) 0%, transparent 38%),
+    radial-gradient(ellipse at 82% 20%, rgba(59,130,246,0.06) 0%, transparent 34%),
+    radial-gradient(ellipse at 60% 88%, rgba(255,122,26,0.04) 0%, transparent 36%);
+  filter: blur(18px);
+  animation: dashboard-orb-float 12s ease-in-out infinite;
+}
+
+.dashboard-backdrop::after {
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 12%, black 28%, transparent 84%);
+  opacity: 0.45;
+  transform: translate3d(0, 0, 0);
+  animation: dashboard-orb-drift 18s ease-in-out infinite;
+}
+
+[data-theme="light"] .dashboard-backdrop::before {
+  background:
+    radial-gradient(ellipse at 14% 10%, rgba(255,122,26,0.06) 0%, transparent 40%),
+    radial-gradient(ellipse at 84% 18%, rgba(59,130,246,0.03) 0%, transparent 36%),
+    radial-gradient(ellipse at 50% 90%, rgba(255,122,26,0.025) 0%, transparent 38%);
+  filter: blur(20px);
+  opacity: 0.85;
+}
+
+[data-theme="light"] .dashboard-backdrop::after {
+  opacity: 0.25;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-backdrop::before,
+  .dashboard-backdrop::after {
+    animation: none;
+  }
+}
 .landing-delay-300 { animation-delay: 0.3s; }
 .landing-delay-400 { animation-delay: 0.4s; }
 .landing-delay-500 { animation-delay: 0.5s; }

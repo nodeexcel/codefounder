@@ -60,6 +60,21 @@ function ToastContainer({ toasts }: { toasts: ToastItem[] }) {
   );
 }
 
+function SectionIcon({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
+      style={{
+        background: "linear-gradient(135deg, rgba(255,122,26,0.12), rgba(255,122,26,0.04))",
+        border: "1px solid rgba(255,122,26,0.12)",
+        boxShadow: "0 0 0 6px rgba(255,122,26,0.04)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 function getInitials(name: string): string {
   return name
     .trim()
@@ -370,24 +385,21 @@ function BusinessTab() {
   if (!session || !b?.businessName) {
     return (
       <div
-        className="flex flex-col items-center gap-4 rounded-xl py-14 text-center"
+        className="flex flex-col items-center gap-4 rounded-2xl px-6 py-14 text-center"
         style={{ background: "var(--card2)", border: "1px solid var(--border)" }}
       >
-        <div
-          className="flex h-12 w-12 items-center justify-center rounded-xl text-2xl"
-          style={{ background: "var(--accent-glow)", color: "var(--accent)" }}
-        >
-          📞
-        </div>
-        <div>
-          <p className="font-heading font-medium" style={{ color: "var(--foreground)" }}>Voice Agent not configured</p>
-          <p className="mt-1 text-sm text-[var(--muted)]">
-            Complete the setup wizard to configure your Voice Agent.
+        <SectionIcon>
+          <img src="/settings.svg" alt="Settings" className="h-8 w-8" />
+        </SectionIcon>
+        <div className="max-w-md space-y-2">
+          <p className="font-heading text-lg font-semibold tracking-[-0.02em]" style={{ color: "var(--foreground)" }}>Voice Agent is not configured</p>
+          <p className="text-sm leading-6 text-[var(--muted)]">
+            Complete the setup wizard to connect your business details, call handling, and working hours.
           </p>
         </div>
         <Link
           href="/wizard"
-          className="mt-1 rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:shadow-lg"
+          className="mt-1 rounded-xl px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:shadow-lg"
           style={{ background: "var(--accent)", fontFamily: "var(--font-heading)" }}
         >
           Start setup wizard
@@ -398,7 +410,7 @@ function BusinessTab() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
         <div className="flex items-center gap-3">
           <span
             className={[
@@ -415,7 +427,7 @@ function BusinessTab() {
         </div>
         <Link
           href="/wizard?reconfigure=true"
-          className="rounded-lg px-4 py-2 text-sm font-medium text-[var(--muted)] transition-all duration-200 hover:text-[var(--accent)]"
+          className="rounded-xl px-4 py-2 text-sm font-medium text-[var(--muted)] transition-all duration-200 hover:text-[var(--accent)]"
           style={{ border: "1px solid var(--border2)" }}
         >
           Reconfigure →
@@ -470,7 +482,7 @@ function BusinessTab() {
 function InfoSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div
-      className="rounded-xl px-5 py-4 transition-all duration-200"
+      className="rounded-2xl px-5 py-5 transition-all duration-200"
       style={{ background: "var(--card2)", border: "1px solid var(--border)" }}
     >
       <h4 className="mb-3 font-heading text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
@@ -507,54 +519,66 @@ export default function SettingsPage() {
         subtitle="Manage your account and preferences"
       />
 
-      <div className="p-4 sm:p-6 lg:p-8">
-        <div className="mx-auto max-w-2xl">
-          <p className="mb-6 font-heading text-[11px] font-semibold uppercase tracking-[3px] text-[var(--accent)]">
-            Account Settings
-          </p>
-
-          {/* Tab nav */}
-          <div
-            className="mb-6 flex gap-1 rounded-xl p-1"
-            style={{ background: "var(--card2)", border: "1px solid var(--border)" }}
+      <div className="p-3 sm:p-4 lg:p-6">
+        <div className="mx-auto max-w-4xl space-y-4">
+          <section
+            className="relative p-0"
+            style={{
+              background: "transparent",
+              border: "none",
+              boxShadow: "none",
+            }}
           >
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200"
-                style={
-                  activeTab === tab.id
-                    ? {
-                        background: "var(--accent)",
-                        color: "var(--foreground)",
-                        boxShadow: "0 0 16px rgba(232,123,44,0.3)",
-                        fontFamily: "var(--font-heading)",
-                      }
-                    : { color: "var(--muted)", fontFamily: "var(--font-heading)" }
-                }
-                onMouseEnter={(e) => {
-                  if (activeTab !== tab.id) {
-                    (e.currentTarget as HTMLElement).style.color = "white";
-                    (e.currentTarget as HTMLElement).style.background = "var(--surface2)";
+            <div className="relative flex items-center gap-3">
+              <SectionIcon>
+                <img src="/settings.svg" alt="Settings" className="h-8 w-8" />
+              </SectionIcon>
+              <div>
+                <p className="font-heading text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
+                  Account Settings
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-col gap-1.5 sm:flex-row">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className="flex-1 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200"
+                  style={
+                    activeTab === tab.id
+                      ? {
+                          background: "var(--accent)",
+                          color: "#ffffff",
+                          boxShadow: "0 0 16px rgba(232,123,44,0.3)",
+                          fontFamily: "var(--font-heading)",
+                        }
+                      : { color: "var(--muted)", fontFamily: "var(--font-heading)" }
                   }
-                }}
-                onMouseLeave={(e) => {
-                  if (activeTab !== tab.id) {
-                    (e.currentTarget as HTMLElement).style.color = "var(--muted)";
-                    (e.currentTarget as HTMLElement).style.background = "";
-                  }
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+                  onMouseEnter={(e) => {
+                    if (activeTab !== tab.id) {
+                      (e.currentTarget as HTMLElement).style.color = "var(--foreground)";
+                      (e.currentTarget as HTMLElement).style.background = "var(--card2)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (activeTab !== tab.id) {
+                      (e.currentTarget as HTMLElement).style.color = "var(--muted)";
+                      (e.currentTarget as HTMLElement).style.background = "";
+                    }
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </section>
 
           {/* Tab content */}
           <div
-            className="rounded-xl p-5 sm:p-6"
-            style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+            className="rounded-3xl p-4 sm:p-5"
+            style={{ background: "var(--card)", border: "1px solid var(--border)", boxShadow: "0 12px 34px rgba(0,0,0,0.04)" }}
           >
             {activeTab === "profile" && <ProfileTab push={push} />}
             {activeTab === "security" && <SecurityTab push={push} />}

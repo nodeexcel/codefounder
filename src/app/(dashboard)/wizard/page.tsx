@@ -826,59 +826,20 @@ function WizardContent() {
         subtitle={`Step ${step + 1} of ${currentSteps.length}: ${currentSteps[step] ?? ""}`}
       />
 
-      <div className="mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
-        <p className="mb-6 font-heading text-[11px] font-semibold uppercase tracking-[3px] text-[var(--accent)]">
-          Agent Configuration
-        </p>
-
-        {/* Progress */}
-        <div className="mb-8">
-          <div className="mb-3 flex items-center justify-between text-sm">
-            <span className="text-[#888]">Progress</span>
-            <span className="font-heading font-semibold text-[var(--accent)]">
-              {Math.round(((step + 1) / currentSteps.length) * 100)}%
-            </span>
+      <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+        <section className="mb-4 flex items-center justify-between px-1">
+          <div>
+            <p className="font-heading text-[11px] font-semibold uppercase tracking-[3px] text-[var(--accent)]">
+              Agent Configuration
+            </p>
+            <h2 className="mt-2 text-2xl font-bold tracking-[-0.03em]" style={{ color: "var(--foreground)" }}>
+              Setup Wizard
+            </h2>
           </div>
-
-          <div className="flex justify-between gap-1 sm:gap-2">
-            {currentSteps.map((label, i) => (
-              <div key={label} className="flex flex-1 flex-col items-center">
-                <div
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-all duration-300"
-                  style={
-                    i === step
-                      ? { background: "var(--accent)", color: "white", boxShadow: "0 0 16px rgba(255,122,26,0.5)" }
-                      : i < step
-                        ? { background: "var(--accent)", color: "white", boxShadow: "0 0 8px rgba(255,122,26,0.2)" }
-                        : { background: "var(--surface2)", color: "var(--muted)" }
-                  }
-                >
-                  {i < step ? "✓" : i + 1}
-                </div>
-                <span
-                  className="mt-2 hidden text-center text-[10px] leading-tight font-heading transition-colors duration-300 sm:block sm:text-[11px]"
-                  style={{ color: i <= step ? "var(--accent)" : "var(--muted)" }}
-                >
-                  {label}
-                </span>
-              </div>
-            ))}
+          <div className="hidden rounded-full px-3 py-1 text-xs font-medium sm:block" style={{ background: "var(--surface)", color: "var(--muted)", border: "1px solid var(--border)" }}>
+            {step + 1}/{currentSteps.length}
           </div>
-
-          <div
-            className="mt-4 h-1.5 overflow-hidden rounded-full"
-            style={{ background: "var(--surface2)" }}
-          >
-            <div
-              className="h-full rounded-full transition-all duration-500 ease-out"
-              style={{
-                width: `${((step + 1) / currentSteps.length) * 100}%`,
-                background: "linear-gradient(90deg, var(--accent), var(--accent-light))",
-                boxShadow: "0 0 8px rgba(232, 123, 44, 0.5)",
-              }}
-            />
-          </div>
-        </div>
+        </section>
 
         {saveError && (
           <p className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400">
@@ -886,20 +847,82 @@ function WizardContent() {
           </p>
         )}
 
-        <div
-          className="relative overflow-hidden rounded-xl p-6 sm:p-8"
-          style={{ background: "var(--card-elevated)", border: "1px solid var(--border)" }}
-        >
+        <div className="space-y-4">
+          <div
+            className="relative overflow-hidden rounded-3xl p-5 sm:p-6"
+            style={{ background: "var(--card-elevated)", border: "1px solid var(--border)", boxShadow: "0 16px 40px rgba(0,0,0,0.05)" }}
+          >
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="font-heading text-[11px] font-semibold uppercase tracking-[3px] text-[var(--accent)]">
+                  Setup Flow
+                </p>
+                <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
+                  One step at a time.
+                </p>
+              </div>
+              <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: "var(--accent-glow)", color: "var(--accent)" }}>
+                {Math.round(((step + 1) / currentSteps.length) * 100)}%
+              </span>
+            </div>
+
+            <div className="mb-4 h-1.5 overflow-hidden rounded-full" style={{ background: "var(--surface2)" }}>
+              <div
+                className="h-full rounded-full transition-all duration-500 ease-out"
+                style={{
+                  width: `${((step + 1) / currentSteps.length) * 100}%`,
+                  background: "linear-gradient(90deg, var(--accent), var(--accent-light))",
+                  boxShadow: "0 0 8px rgba(232, 123, 44, 0.5)",
+                }}
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {currentSteps.map((label, i) => {
+                const active = i === step;
+                const done = i < step;
+                return (
+                  <div
+                    key={label}
+                    className="flex items-center gap-2 rounded-full border px-3 py-2"
+                    style={{
+                      background: active ? "var(--surface)" : "transparent",
+                      borderColor: active ? "rgba(255,122,26,0.22)" : "var(--border)",
+                    }}
+                  >
+                    <div
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
+                      style={
+                        active
+                          ? { background: "var(--accent)", color: "white" }
+                          : done
+                            ? { background: "rgba(255,122,26,0.16)", color: "var(--accent)" }
+                            : { background: "var(--surface2)", color: "var(--muted)" }
+                      }
+                    >
+                      {done ? "✓" : i + 1}
+                    </div>
+                    <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>{label}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div
+            className="relative overflow-hidden rounded-3xl p-5 sm:p-6"
+            style={{ background: "var(--card-elevated)", border: "1px solid var(--border)" }}
+          >
           {/* ── Step 0 — Choose Agent ─────────────────────────────────────────── */}
           {step === 0 && (
             <div>
-              <h2 className="font-heading mb-2 text-xl font-bold text-white">
+              <h2 className="font-heading mb-2 text-xl font-bold tracking-[-0.02em] text-white">
                 Choose your agent type
               </h2>
-              <p className="mb-6 text-sm text-[#888]">
-                AI Receptionist is available now. More agents are launching soon.
+              <p className="mb-5 max-w-xl text-sm leading-6 text-[#888]">
+                Pick one agent to continue.
               </p>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 {AGENTS.map((agent) => {
                   const available = AVAILABLE_AGENT_TYPES.includes(agent.id);
                   const selected = data.agentType === agent.id;
@@ -909,9 +932,9 @@ function WizardContent() {
                       type="button"
                       disabled={!available}
                       onClick={() => selectAgent(agent.id)}
-                      className="relative rounded-xl p-4 text-left transition-all duration-200"
+                      className="relative rounded-2xl p-4 text-left transition-all duration-200"
                       style={{
-                        background: selected ? "var(--accent-glow)" : "var(--card-elevated)",
+                        background: selected ? "var(--accent-glow)" : "var(--surface)",
                         border: selected
                           ? "1px solid var(--accent)"
                           : "1px solid var(--border2)",
@@ -931,8 +954,8 @@ function WizardContent() {
                         </span>
                       )}
                       <span className="text-2xl">{agent.icon}</span>
-                      <p className="mt-2 font-heading font-semibold text-white">{agent.name}</p>
-                      <p className="mt-1 text-xs leading-relaxed text-[#888]">{agent.description}</p>
+                      <p className="mt-2 font-heading text-sm font-semibold text-white">{agent.name}</p>
+                      <p className="mt-1 text-xs leading-relaxed text-[#888]">{available ? "Select to continue" : "Coming soon"}</p>
                     </button>
                   );
                 })}
@@ -1939,7 +1962,8 @@ function WizardContent() {
               </Button>
             )}
           </div>
-        </div>
+          </div>
+          </div>
       </div>
     </>
   );

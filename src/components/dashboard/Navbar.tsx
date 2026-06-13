@@ -12,6 +12,13 @@ interface DashboardNavbarProps {
   subtitle?: string;
 }
 
+const quickLinks = [
+  { href: "/calls", label: "Calls" },
+  { href: "/hr", label: "HR" },
+  { href: "/marketing", label: "Marketing" },
+  { href: "/crm", label: "CRM" },
+];
+
 export function DashboardNavbar({ title, subtitle }: DashboardNavbarProps) {
   const { profile, loading: profileLoading } = useProfile();
   const [user, setUser] = useState<User | null>(null);
@@ -47,7 +54,7 @@ export function DashboardNavbar({ title, subtitle }: DashboardNavbarProps) {
 
   return (
     <header
-      className="sticky top-0 z-40 flex min-h-[56px] items-center justify-between gap-4 px-5 py-2.5 sm:px-6 lg:px-7"
+      className="sticky top-0 z-40 flex min-h-[56px] items-center gap-4 px-5 py-2.5 sm:px-6 lg:px-7"
       style={{
         background: "var(--nav-bg)",
         borderBottom: "1px solid var(--border)",
@@ -59,7 +66,12 @@ export function DashboardNavbar({ title, subtitle }: DashboardNavbarProps) {
       <div className="min-w-0">
         <h1
           className="truncate text-[15px] font-semibold leading-snug"
-          style={{ fontFamily: "var(--font-heading)", letterSpacing: "-0.02em", color: "var(--foreground)" }}
+          style={{
+            fontFamily: "Georgia, 'Times New Roman', serif",
+            fontStyle: "italic",
+            letterSpacing: "-0.02em",
+            color: "#FF7A1A",
+          }}
         >
           {title}
         </h1>
@@ -68,6 +80,49 @@ export function DashboardNavbar({ title, subtitle }: DashboardNavbarProps) {
             {subtitle}
           </p>
         )}
+      </div>
+
+      <div className="hidden flex-1 items-center justify-center xl:flex">
+        <div
+          className="flex items-center gap-2 rounded-full px-2 py-1"
+          style={{
+            background: "linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,122,26,0.03))",
+            border: "1px solid var(--border)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
+          }}
+        >
+          <span
+            className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
+            style={{
+              background: "rgba(255,122,26,0.08)",
+              color: "var(--accent)",
+              border: "1px solid rgba(255,122,26,0.14)",
+              fontFamily: "var(--font-sans)",
+            }}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_12px_rgba(255,122,26,0.55)]" />
+            Workspace live
+          </span>
+          <span className="h-4 w-px bg-[var(--border)]" />
+          {quickLinks.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              className="rounded-full px-3 py-1 text-[12px] font-medium transition-all duration-150"
+              style={{ color: "var(--muted)", fontFamily: "var(--font-sans)" }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.background = "var(--surface)";
+                (e.currentTarget as HTMLElement).style.color = "var(--foreground)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = "transparent";
+                (e.currentTarget as HTMLElement).style.color = "var(--muted)";
+              }}
+            >
+              {link.label}
+            </a>
+          ))}
+        </div>
       </div>
 
       {/* Right side */}
