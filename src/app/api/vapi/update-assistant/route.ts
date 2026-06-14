@@ -154,8 +154,8 @@ export async function POST(request: Request) {
   };
 
   const voiceConfig = {
-    provider: "deepgram",
-    voiceId: "aura-asteria-en",
+    provider: "openai",
+    voiceId: "nova",
   };
 
   const latencyConfig = {

@@ -104,9 +104,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  // Log the full payload so you can see exactly what Vapi is sending
-  console.log("[vapi/webhook] received payload:", JSON.stringify(rawBody, null, 2));
-
   // Handle both { message: { type, call, ... } } and flat { type, call, ... }
   const event: VapiEventData = rawBody.message ?? rawBody;
   const eventType = event.type ?? "unknown";
@@ -213,8 +210,7 @@ export async function POST(request: Request) {
     status,
   };
 
-  console.log("[vapi/webhook] saving to Supabase:", record);
-  console.log("[vapi/webhook] using Supabase URL:", supabaseUrl);
+  console.log("[vapi/webhook] saving call_id:", record.call_id, "for user:", record.user_id);
 
   const { error } = await adminSupabase
     .from("call_logs")

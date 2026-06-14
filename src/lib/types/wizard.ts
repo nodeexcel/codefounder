@@ -148,7 +148,7 @@ export interface WizardFormData {
   marketing: MarketingSettings;
 }
 
-export const AVAILABLE_AGENT_TYPES: AgentType[] = ["voice", "hr", "marketing"];
+export const AVAILABLE_AGENT_TYPES: AgentType[] = ["voice"];
 
 export const MARKETING_WIZARD_STEPS = [
   "Choose Agent",

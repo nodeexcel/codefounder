@@ -4,7 +4,7 @@ import { KpiWidget } from "@/components/dashboard/KpiWidget";
 import { PlanWidget } from "@/components/dashboard/PlanWidget";
 import { LiveAgentsWidget } from "@/components/dashboard/LiveAgentsWidget";
 import { RecentCallsWidget } from "@/components/dashboard/RecentCallsWidget";
-import { AgentSnapshotSection, type AgentSnapshotBlock } from "@/components/dashboard/AgentSnapshotSection";
+import { AgentSnapshotSection, type AgentSnapshotBlock, type AgentSnapshotEntry } from "@/components/dashboard/AgentSnapshotSection";
 import { Button } from "@/components/ui/Button";
 import { AGENTS, type AgentType } from "@/lib/agents";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -181,7 +181,7 @@ export default async function DashboardPage() {
     crm: "/crm",
   };
 
-  const voiceEntries = sessionsByType.voice.map((session) => {
+  const voiceEntries: AgentSnapshotEntry[] = sessionsByType.voice.map((session) => {
     const settings = (session.voice_settings ?? {}) as { agentName?: string };
     const businessName = session.business_details?.businessName?.trim() || "Untitled Business";
     const assistantId = session.vapi_assistant_id ?? "";
@@ -217,7 +217,7 @@ export default async function DashboardPage() {
     });
   }
 
-  const hrEntries = sessionsByType.hr.map((session) => {
+  const hrEntries: AgentSnapshotEntry[] = sessionsByType.hr.map((session) => {
     const settings = (session.voice_settings ?? {}) as { agentName?: string; leaveTypes?: unknown[] };
     const businessName = session.business_details?.businessName?.trim() || "Untitled Business";
     const leaveTypes = Array.isArray(settings.leaveTypes) ? settings.leaveTypes.length : 0;
@@ -250,7 +250,7 @@ export default async function DashboardPage() {
     });
   }
 
-  const marketingEntries = sessionsByType.marketing.map((session) => {
+  const marketingEntries: AgentSnapshotEntry[] = sessionsByType.marketing.map((session) => {
     const settings = (session.voice_settings ?? {}) as { agentName?: string; platforms?: unknown[]; brandTone?: string };
     const businessName = session.business_details?.businessName?.trim() || "Untitled Business";
     const platforms = Array.isArray(settings.platforms)
@@ -304,7 +304,7 @@ export default async function DashboardPage() {
     .sort((a, b) => b[1].total - a[1].total)
     .slice(0, 8);
 
-  const crmEntries = crmByCompanySorted.map(([company, stats], index) => {
+  const crmEntries: AgentSnapshotEntry[] = crmByCompanySorted.map(([company, stats], index) => {
     const thisMonth = contacts.filter((row) => {
       const rowCompany = row.company?.trim() || "Unassigned";
       return rowCompany === company && new Date(row.created_at).getTime() >= monthStartMs;

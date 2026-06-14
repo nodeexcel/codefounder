@@ -5,7 +5,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { BusinessDetails, VoiceSettings } from "@/lib/types/wizard";
 import { timeAgo } from "@/lib/format";
 
-const AVAILABLE: Set<AgentType> = new Set(["voice", "hr", "marketing"]);
+const AVAILABLE: Set<AgentType> = new Set(["voice"]);
 
 export default async function AgentsPage() {
   const supabase = await createServerSupabaseClient();
@@ -91,7 +91,7 @@ export default async function AgentsPage() {
           </Button>
         </div>
         <div className="grid gap-5 md:grid-cols-2 agents-grid">
-          {AGENTS.map((agent) => {
+          {AGENTS.filter((agent) => agent.id === "voice").map((agent) => {
             const session = sessionMap.get(agent.id);
             const isLive = session?.status === "live";
             const isAvailable = AVAILABLE.has(agent.id);

@@ -98,6 +98,7 @@ function WizardContent() {
   const [micModalOpen, setMicModalOpen] = useState(false);
   const [provisioning, setProvisioning] = useState(false);
   const [vapiPhoneNumberId, setVapiPhoneNumberId] = useState<string | null>(null);
+  const [vapiAssistantId, setVapiAssistantId] = useState<string | null>(null);
   const vapiRef = useRef<import("@vapi-ai/web").default | null>(null);
 
   // HR-specific state
@@ -183,6 +184,16 @@ function WizardContent() {
           const savedVapiId = (saved.data.voice as unknown as Record<string, unknown>)
             .vapiPhoneNumberId as string | undefined;
           if (savedVapiId) setVapiPhoneNumberId(savedVapiId);
+
+          // Load vapi_assistant_id so test call button is only shown when an assistant exists
+          const { data: assistSess } = await supabase
+            .from("agent_wizard_sessions")
+            .select("vapi_assistant_id")
+            .eq("user_id", user.id)
+            .eq("agent_type", "voice")
+            .maybeSingle();
+          const existingAssistId = (assistSess as { vapi_assistant_id?: string } | null)?.vapi_assistant_id;
+          if (existingAssistId) setVapiAssistantId(existingAssistId);
         }
         // Bug 2: Load HR knowledge base files so they appear on reconfigure and review
         if (saved.data.agentType === "hr") {
@@ -527,6 +538,7 @@ function WizardContent() {
       if (error) { setSaveError(error); return; }
 
       if (vapiResult.assistantId) {
+        setVapiAssistantId(vapiResult.assistantId);
         await supabase
           .from("agent_wizard_sessions")
           .update({ vapi_assistant_id: vapiResult.assistantId })
@@ -923,7 +935,7 @@ function WizardContent() {
                 Pick one agent to continue.
               </p>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {AGENTS.map((agent) => {
+                {AGENTS.filter((agent) => agent.id === "voice").map((agent) => {
                   const available = AVAILABLE_AGENT_TYPES.includes(agent.id);
                   const selected = data.agentType === agent.id;
                   return (
@@ -1940,41 +1952,43 @@ function WizardContent() {
                 </div>
               )}
 
-              {/* Test Call */}
-              <div
-                className="mb-6 rounded-xl p-5"
-                style={{ background: "rgba(255,122,26,0.04)", border: "1px solid rgba(255,122,26,0.15)" }}
-              >
-                <p className="mb-1 font-heading font-semibold text-white">Test your agent</p>
-                <p className="mb-1 text-sm text-[#888]">
-                  Have a live conversation with your AI Receptionist before going live.
-                </p>
-                <p className="mb-4 text-xs" style={{ color: "var(--muted)" }}>
-                  Test calls use minimal credits (~$0.05-0.10 per minute)
-                </p>
-                <Button
-                  variant={testCallActive ? "ghost" : "secondary"}
-                  size="md"
-                  onClick={handleTestCall}
-                  disabled={testCallConnecting}
+              {/* Test Call — only visible once an assistant has been created */}
+              {vapiAssistantId && (
+                <div
+                  className="mb-6 rounded-xl p-5"
+                  style={{ background: "rgba(255,122,26,0.04)", border: "1px solid rgba(255,122,26,0.15)" }}
                 >
-                  {testCallActive
-                    ? "🔴 End call"
-                    : testCallConnecting
-                      ? "⏳ Starting..."
-                      : "🎙️ Start test call"}
-                </Button>
-                {testCallActive && (
-                  <p className="mt-3 text-sm text-[var(--accent)] animate-pulse">
-                    Call in progress — speak now…
+                  <p className="mb-1 font-heading font-semibold text-white">Test your agent</p>
+                  <p className="mb-1 text-sm text-[#888]">
+                    Have a live conversation with your AI Receptionist before going live.
                   </p>
-                )}
-                {testCallConnecting && (
-                  <p className="mt-3 text-sm text-[#888] animate-pulse">
-                    Connecting to your agent…
+                  <p className="mb-4 text-xs" style={{ color: "var(--muted)" }}>
+                    Test calls use minimal credits (~$0.05-0.10 per minute)
                   </p>
-                )}
-              </div>
+                  <Button
+                    variant={testCallActive ? "ghost" : "secondary"}
+                    size="md"
+                    onClick={handleTestCall}
+                    disabled={testCallConnecting}
+                  >
+                    {testCallActive
+                      ? "🔴 End call"
+                      : testCallConnecting
+                        ? "⏳ Starting..."
+                        : "🎙️ Start test call"}
+                  </Button>
+                  {testCallActive && (
+                    <p className="mt-3 text-sm text-[var(--accent)] animate-pulse">
+                      Call in progress — speak now…
+                    </p>
+                  )}
+                  {testCallConnecting && (
+                    <p className="mt-3 text-sm text-[#888] animate-pulse">
+                      Connecting to your agent…
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

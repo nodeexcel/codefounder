@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { AuthField } from "@/components/auth/AuthField";
 import { PasswordStrengthIndicator } from "@/components/auth/PasswordStrengthIndicator";
@@ -18,6 +18,7 @@ import {
 } from "@/components/auth/validation";
 
 type AuthMode = "login" | "signup";
+type FormStep = "form" | "otp";
 
 interface AuthFormProps {
   mode: AuthMode;
@@ -47,6 +48,14 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsTouched, setTermsTouched] = useState(false);
+
+  // OTP verification state (signup only)
+  const [formStep, setFormStep] = useState<FormStep>("form");
+  const [otpValue, setOtpValue] = useState("");
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const markTouched = useCallback((field: FieldKey) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
@@ -115,44 +124,22 @@ export function AuthForm({ mode }: AuthFormProps) {
         confirmPassword
       ) && termsAccepted;
 
-  async function waitForSession(
-    maxAttempts = 15,
-    delayMs = 200
-  ): Promise<boolean> {
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session) return true;
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-    }
-    return false;
+  // Start 60-second resend cooldown
+  function startResendCooldown() {
+    setResendCooldown(60);
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownRef.current!);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
   }
 
-  async function redirectToDashboard() {
-    const hasSession = await waitForSession();
-    if (!hasSession) {
-      setError("Session could not be established. Please try again.");
-      return;
-    }
-    window.location.href = "/dashboard";
-  }
-
-  async function saveUserProfile(
-    userId: string,
-    profile: { username: string; full_name: string; email: string }
-  ) {
-    const { error: profileError } = await supabase.from("profiles").upsert(
-      {
-        id: userId,
-        username: profile.username,
-        full_name: profile.full_name,
-        email: profile.email,
-      },
-      { onConflict: "id" }
-    );
-    if (profileError) throw new Error(profileError.message);
-  }
+  // Clean up interval on unmount
+  useEffect(() => () => { if (cooldownRef.current) clearInterval(cooldownRef.current); }, []);
 
   async function handleEmailAuth(e: React.FormEvent) {
     e.preventDefault();
@@ -163,51 +150,17 @@ export function AuthForm({ mode }: AuthFormProps) {
 
     setLoading(true);
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-      setError(
-        "Authentication is not configured. Missing Supabase environment variables."
-      );
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      setError(“Authentication is not configured. Missing Supabase environment variables.”);
       setLoading(false);
       return;
     }
 
     try {
       if (isLogin) {
-        const { data, error: authError } = await supabase.auth.signInWithPassword(
-          {
-            email: email.trim(),
-            password,
-          }
-        );
-
-        if (authError) {
-          setError(authError.message);
-          return;
-        }
-
-        if (!data.session) {
-          setError("Sign in failed. No session was created. Please try again.");
-          return;
-        }
-
-        await redirectToDashboard();
-      } else {
-        const trimmedName = fullName.trim();
-        const normalizedUsername = username.trim().toLowerCase();
-
-        const { data, error: authError } = await supabase.auth.signUp({
+        const { data, error: authError } = await supabase.auth.signInWithPassword({
           email: email.trim(),
           password,
-          options: {
-            data: {
-              full_name: trimmedName,
-              username: normalizedUsername,
-            },
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
-          },
         });
 
         if (authError) {
@@ -215,30 +168,111 @@ export function AuthForm({ mode }: AuthFormProps) {
           return;
         }
 
-        if (!data.user) {
-          setError("Sign up failed. Please try again.");
-          return;
-        }
-
         if (!data.session) {
-          setError(
-            'Account created but email confirmation is required. Disable “Confirm email” in Supabase Auth settings for instant access, or confirm your email first.'
-          );
+          setError(“Sign in failed. No session was created. Please try again.”);
           return;
         }
 
-        await saveUserProfile(data.user.id, {
-          username: normalizedUsername,
-          full_name: trimmedName,
-          email: email.trim(),
+        window.location.href = “/dashboard”;
+      } else {
+        // Signup: send OTP via our API (creates unconfirmed user + emails 6-digit code)
+        const res = await fetch(“/api/auth/send-email-otp”, {
+          method: “POST”,
+          headers: { “Content-Type”: “application/json” },
+          body: JSON.stringify({
+            email: email.trim(),
+            password,
+            fullName: fullName.trim(),
+            username: username.trim().toLowerCase(),
+          }),
         });
 
-        await redirectToDashboard();
+        const json = await res.json() as { success?: boolean; error?: string };
+
+        if (!res.ok || !json.success) {
+          setError(json.error ?? “Failed to send verification email. Please try again.”);
+          return;
+        }
+
+        // Switch to OTP verification screen
+        setFormStep(“otp”);
+        setOtpValue(“”);
+        setOtpError(null);
+        startResendCooldown();
       }
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleVerifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setOtpError(null);
+
+    const cleaned = otpValue.replace(/\D/g, "").slice(0, 6);
+    if (cleaned.length !== 6) {
+      setOtpError("Please enter the full 6-digit code.");
+      return;
+    }
+
+    setOtpLoading(true);
+    try {
+      const res = await fetch("/api/auth/verify-email-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), otp: cleaned }),
+      });
+
+      const json = await res.json() as { success?: boolean; error?: string };
+
+      if (!res.ok || !json.success) {
+        setOtpError(json.error ?? "Verification failed. Please try again.");
+        return;
+      }
+
+      // Email confirmed — sign in with the credentials still in state
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (signInError || !signInData.session) {
+        setOtpError("Email verified! Please sign in with your credentials.");
+        setTimeout(() => { window.location.href = "/login"; }, 2000);
+        return;
+      }
+
+      window.location.href = "/dashboard";
+    } catch (err) {
+      setOtpError(getErrorMessage(err));
+    } finally {
+      setOtpLoading(false);
+    }
+  }
+
+  async function handleResendOtp() {
+    if (resendCooldown > 0 || otpLoading) return;
+    setOtpError(null);
+    setOtpLoading(true);
+    try {
+      const res = await fetch("/api/auth/send-email-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), resend: true }),
+      });
+      const json = await res.json() as { success?: boolean; error?: string };
+      if (!res.ok || !json.success) {
+        setOtpError(json.error ?? "Failed to resend code. Please try again.");
+        return;
+      }
+      setOtpValue("");
+      startResendCooldown();
+    } catch (err) {
+      setOtpError(getErrorMessage(err));
+    } finally {
+      setOtpLoading(false);
     }
   }
 
