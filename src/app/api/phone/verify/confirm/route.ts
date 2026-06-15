@@ -67,9 +67,40 @@ export async function POST(request: Request) {
     );
   }
 
-  if (hashOtp(otp.trim(), storedSalt) !== storedHash) {
+  const attempts = (vs._otpAttempts as number | undefined) ?? 0;
+  if (attempts >= 3) {
     return NextResponse.json(
-      { error: "Incorrect verification code." },
+      { error: "Too many incorrect attempts. Request a new verification code." },
+      { status: 429 }
+    );
+  }
+
+  if (hashOtp(otp.trim(), storedSalt) !== storedHash) {
+    // Increment attempt count — clear OTP keys when exhausted to force a resend
+    const newAttempts = attempts + 1;
+    if (newAttempts >= 3) {
+      // Exhaust — remove OTP data so the user must request a new code
+      const vsLocked: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(vs)) {
+        if (!k.startsWith("_otp")) vsLocked[k] = v;
+      }
+      await adminSupabase
+        .from("agent_wizard_sessions")
+        .update({ voice_settings: vsLocked, updated_at: new Date().toISOString() })
+        .eq("user_id", user.id)
+        .eq("agent_type", "voice");
+    } else {
+      await adminSupabase
+        .from("agent_wizard_sessions")
+        .update({
+          voice_settings: { ...vs, _otpAttempts: newAttempts },
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", user.id)
+        .eq("agent_type", "voice");
+    }
+    return NextResponse.json(
+      { error: `Incorrect verification code. ${3 - newAttempts} attempt${3 - newAttempts === 1 ? "" : "s"} remaining.` },
       { status: 400 }
     );
   }

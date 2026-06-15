@@ -138,13 +138,37 @@ export async function saveWizardProgress(
   }
   // undefined → omit the key entirely so the column is not touched on upsert
 
+  // Strip unverified phone numbers before persisting voice settings.
+  // Both forwardTo and existingPhoneNumber require OTP confirmation before
+  // they are saved — if their respective verified field doesn't match, omit them.
+  let voiceSettings: VoiceSettings | Partial<HRSettings> | Partial<MarketingSettings>;
+  if (!isHR && !isMarketing) {
+    let v = formData.voice;
+
+    if (v.forwardTo && v.forwardToVerified !== v.forwardTo) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { forwardTo: _ft, forwardToVerified: _fv, ...rest } = v;
+      v = rest as VoiceSettings;
+    }
+
+    if (v.existingPhoneNumber && v.existingPhoneNumberVerified !== v.existingPhoneNumber) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { existingPhoneNumber: _ep, existingPhoneNumberVerified: _epv, ...rest } = v;
+      v = rest as VoiceSettings;
+    }
+
+    voiceSettings = v;
+  } else {
+    voiceSettings = isHR ? formData.hr : formData.marketing;
+  }
+
   const sessionPayload: Record<string, unknown> = {
     user_id: userId,
     agent_type: formData.agentType,
     current_step: currentStep,
     status,
     business_details: formData.business,
-    voice_settings: isHR ? formData.hr : isMarketing ? formData.marketing : formData.voice,
+    voice_settings: voiceSettings,
     updated_at: new Date().toISOString(),
   };
   if (telnyxNumber !== undefined) {

@@ -133,11 +133,13 @@ export interface VoiceSettings {
   agentName: string;
   tone: VoiceTone;
   forwardTo: string;
+  forwardToVerified?: string;    // Set to the verified phone number after OTP confirmation
   calendarConnected: boolean;
   calendarEmail: string;
   phoneOption: "new" | "forward" | "";
   phoneNumber: string;           // Telnyx-provisioned number only — never a personal number
-  existingPhoneNumber?: string;  // User's own carrier number (forward mode, reference only)
+  existingPhoneNumber?: string;         // User's own carrier number (forward mode, reference only)
+  existingPhoneNumberVerified?: string; // Set to the verified number after OTP confirmation
   languages: string[];
   vapiPhoneNumberId?: string | null;
 }

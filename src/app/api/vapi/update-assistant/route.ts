@@ -110,7 +110,12 @@ export async function POST(request: Request) {
     server: calendarToolServer,
   };
 
-  const forwardTo = body.wizardData.voice.forwardTo?.trim();
+  // Only use the forwarding number when it has been OTP-verified. forwardToVerified
+  // stores the verified phone; if it doesn't match forwardTo the number was never
+  // confirmed and must not be wired into the assistant.
+  const rawForwardTo = body.wizardData.voice.forwardTo?.trim();
+  const forwardToVerified = body.wizardData.voice.forwardToVerified?.trim();
+  const forwardTo = rawForwardTo && forwardToVerified === rawForwardTo ? rawForwardTo : undefined;
 
   const transferCallTool = forwardTo
     ? {
@@ -148,14 +153,17 @@ export async function POST(request: Request) {
   const selectedLanguages = body.wizardData.voice.languages ?? ["English"];
   const isMultiLang = selectedLanguages.length > 1;
 
-  // Multi-language: Deepgram nova-2 accepts language:"multi" to enable automatic
-  // language detection across the call. Endpointing is raised to 200ms so the
-  // model has enough audio to identify the language before cutting the utterance.
-  // Single-language: stay at 100ms for faster end-of-utterance detection.
+  // Multi-language: nova-3 is required. nova-2 + "multi" only covers Spanish/English
+  // (confirmed from Deepgram docs). nova-3 + "multi" covers English, Spanish, French,
+  // German, Hindi, Russian, Portuguese, Japanese, Italian, Dutch — which includes Hindi.
+  // Urdu and Punjabi are not in nova-3's multi scope but the LLM can still reply in
+  // them if Deepgram transcribes the audio as Hindi (phonetically similar) or English.
+  // Endpointing raised to 200ms for multi-language detection accuracy.
+  // Single-language: nova-2 at 100ms for fastest English end-of-utterance detection.
   const transcriberConfig = isMultiLang
     ? {
         provider: "deepgram",
-        model: "nova-2",
+        model: "nova-3",
         language: "multi",
         smartFormat: true,
         endpointing: 200,

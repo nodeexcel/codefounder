@@ -112,6 +112,20 @@ function WizardContent() {
   // Marketing-specific state
   const [marketingSessionId, setMarketingSessionId] = useState<string | null>(null);
 
+  // Forwarding number OTP state
+  const [otpStep, setOtpStep] = useState<"idle" | "sent" | "verified">("idle");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
+
+  // Existing phone number OTP state
+  const [otpStepExistingPhone, setOtpStepExistingPhone] = useState<"idle" | "sent" | "verified">("idle");
+  const [otpCodeExistingPhone, setOtpCodeExistingPhone] = useState("");
+  const [otpSendingExistingPhone, setOtpSendingExistingPhone] = useState(false);
+  const [otpVerifyingExistingPhone, setOtpVerifyingExistingPhone] = useState(false);
+  const [otpErrorExistingPhone, setOtpErrorExistingPhone] = useState<string | null>(null);
+
   const selectedAgent = data.agentType ? getAgentById(data.agentType) : null;
   const isHR = data.agentType === "hr";
   const isMarketing = data.agentType === "marketing";
@@ -183,6 +197,11 @@ function WizardContent() {
       }
       if (saved && !isNew) {
         setData(saved.data);
+        // Restore OTP verified state from persisted voice_settings
+        if (saved.data.agentType === "voice") {
+          if (saved.data.voice.forwardToVerified) setOtpStep("verified");
+          if (saved.data.voice.existingPhoneNumberVerified) setOtpStepExistingPhone("verified");
+        }
         // Bug 2: Load HR knowledge base files so they appear on reconfigure and review
         if (saved.data.agentType === "hr") {
           const { data: hrSess } = await supabase
@@ -1230,14 +1249,206 @@ function WizardContent() {
                 </select>
               </div>
 
-              <Input
-                label="Forward calls to (optional)"
-                type="tel"
-                placeholder="+1 (555) 987-6543"
-                hint="Human backup number when the agent escalates a call"
-                value={data.voice.forwardTo}
-                onChange={(e) => updateVoice({ forwardTo: e.target.value })}
-              />
+              {/* Forwarding number with OTP verification */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium" style={{ color: "#AAAAAA" }}>
+                  Forward calls to <span style={{ color: "#555", fontWeight: 400 }}>(optional)</span>
+                </label>
+
+                {otpStep === "verified" ? (
+                  // ── Verified state ────────────────────────────────────────────
+                  <div
+                    className="flex items-center justify-between rounded-lg px-4 py-3"
+                    style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)" }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      <span className="text-sm font-medium" style={{ color: "#22C55E" }}>Verified</span>
+                      <span className="text-sm" style={{ color: "var(--foreground)" }}>{data.voice.forwardTo}</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-xs"
+                      style={{ color: "var(--muted)" }}
+                      onClick={() => {
+                        updateVoice({ forwardTo: "", forwardToVerified: undefined });
+                        setOtpStep("idle");
+                        setOtpCode("");
+                        setOtpError(null);
+                      }}
+                    >
+                      Change
+                    </button>
+                  </div>
+                ) : otpStep === "sent" ? (
+                  // ── Code sent — enter OTP ─────────────────────────────────────
+                  <div className="space-y-3">
+                    <div
+                      className="flex items-center justify-between rounded-lg px-4 py-3"
+                      style={{ background: "var(--card-elevated)", border: "1px solid var(--border2)" }}
+                    >
+                      <span className="text-sm" style={{ color: "var(--foreground)" }}>{data.voice.forwardTo}</span>
+                      <button
+                        type="button"
+                        className="text-xs"
+                        style={{ color: "var(--muted)" }}
+                        onClick={() => {
+                          setOtpStep("idle");
+                          setOtpCode("");
+                          setOtpError(null);
+                        }}
+                      >
+                        Change
+                      </button>
+                    </div>
+                    <p className="text-xs" style={{ color: "var(--muted)" }}>
+                      A 6-digit code was sent to {data.voice.forwardTo}. Enter it below to verify.
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="123456"
+                        value={otpCode}
+                        onChange={(e) => { setOtpCode(e.target.value.replace(/\D/g, "")); setOtpError(null); }}
+                        style={{
+                          flex: 1,
+                          background: "var(--card-elevated)",
+                          border: `1px solid ${otpError ? "rgba(239,68,68,0.5)" : "var(--border2)"}`,
+                          color: "var(--foreground)",
+                          padding: "10px 16px",
+                          borderRadius: "8px",
+                          fontSize: "14px",
+                          letterSpacing: "0.25em",
+                          outline: "none",
+                        }}
+                      />
+                      <button
+                        type="button"
+                        disabled={otpCode.length !== 6 || otpVerifying}
+                        onClick={async () => {
+                          setOtpVerifying(true);
+                          setOtpError(null);
+                          try {
+                            const res = await fetch("/api/phone/verify/confirm", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ phone: data.voice.forwardTo, otp: otpCode }),
+                            });
+                            const json = await res.json() as { error?: string };
+                            if (!res.ok) {
+                              setOtpError(json.error ?? "Verification failed.");
+                              if (res.status === 429) setOtpStep("idle");
+                            } else {
+                              updateVoice({ forwardToVerified: data.voice.forwardTo });
+                              setOtpStep("verified");
+                              setOtpCode("");
+                            }
+                          } catch {
+                            setOtpError("Network error. Please try again.");
+                          } finally {
+                            setOtpVerifying(false);
+                          }
+                        }}
+                        className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all disabled:opacity-50"
+                        style={{ background: "var(--accent)", whiteSpace: "nowrap" }}
+                      >
+                        {otpVerifying ? "Verifying…" : "Verify"}
+                      </button>
+                    </div>
+                    {otpError && <p className="text-xs" style={{ color: "#EF4444" }}>{otpError}</p>}
+                    <button
+                      type="button"
+                      disabled={otpSending}
+                      onClick={async () => {
+                        setOtpSending(true);
+                        setOtpError(null);
+                        try {
+                          const res = await fetch("/api/phone/verify/send", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ phone: data.voice.forwardTo }),
+                          });
+                          const json = await res.json() as { error?: string };
+                          if (!res.ok) setOtpError(json.error ?? "Failed to resend code.");
+                          else setOtpCode("");
+                        } catch {
+                          setOtpError("Network error. Please try again.");
+                        } finally {
+                          setOtpSending(false);
+                        }
+                      }}
+                      className="text-xs"
+                      style={{ color: "var(--muted)" }}
+                    >
+                      {otpSending ? "Sending…" : "Resend code"}
+                    </button>
+                  </div>
+                ) : (
+                  // ── Idle — enter phone number ─────────────────────────────────
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="tel"
+                        placeholder="+1 (555) 987-6543"
+                        value={data.voice.forwardTo}
+                        onChange={(e) => {
+                          updateVoice({ forwardTo: e.target.value, forwardToVerified: undefined });
+                          setOtpError(null);
+                        }}
+                        style={{
+                          flex: 1,
+                          background: "var(--card-elevated)",
+                          border: `1px solid ${otpError ? "rgba(239,68,68,0.5)" : "var(--border2)"}`,
+                          color: "var(--foreground)",
+                          padding: "10px 16px",
+                          borderRadius: "8px",
+                          fontSize: "14px",
+                          outline: "none",
+                        }}
+                      />
+                      {data.voice.forwardTo.trim() && (
+                        <button
+                          type="button"
+                          disabled={otpSending}
+                          onClick={async () => {
+                            setOtpSending(true);
+                            setOtpError(null);
+                            try {
+                              const res = await fetch("/api/phone/verify/send", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ phone: data.voice.forwardTo }),
+                              });
+                              const json = await res.json() as { error?: string };
+                              if (!res.ok) {
+                                setOtpError(json.error ?? "Failed to send code.");
+                              } else {
+                                setOtpStep("sent");
+                              }
+                            } catch {
+                              setOtpError("Network error. Please try again.");
+                            } finally {
+                              setOtpSending(false);
+                            }
+                          }}
+                          className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all disabled:opacity-50"
+                          style={{ background: "var(--accent)", whiteSpace: "nowrap" }}
+                        >
+                          {otpSending ? "Sending…" : "Send code"}
+                        </button>
+                      )}
+                    </div>
+                    {otpError && <p className="text-xs" style={{ color: "#EF4444" }}>{otpError}</p>}
+                    <p className="text-xs" style={{ color: "var(--muted)" }}>
+                      Human backup number when the agent escalates a call. Verification required.
+                    </p>
+                  </div>
+                )}
+              </div>
 
               <div>
                 <div className="mb-1.5 flex items-center justify-between">
@@ -1712,22 +1923,206 @@ function WizardContent() {
                       <li>3. Enter your existing number below for reference — it is displayed in your dashboard but does not change call routing.</li>
                     </ol>
                   </div>
-                  <Input
-                    label="Your existing phone number (for reference)"
-                    type="tel"
-                    placeholder="+1 (555) 123-4567"
-                    hint="Must be in E.164 format: +1XXXXXXXXXX"
-                    value={data.voice.existingPhoneNumber ?? ""}
-                    onChange={(e) => {
-                      const raw = e.target.value.trim();
-                      updateVoice({ existingPhoneNumber: raw });
-                    }}
-                  />
-                  {data.voice.existingPhoneNumber && !/^\+[1-9]\d{6,14}$/.test(data.voice.existingPhoneNumber.replace(/[\s\-().]/g, "")) && (
-                    <p className="text-xs font-medium" style={{ color: "#EF4444" }}>
-                      Enter a valid phone number in E.164 format (e.g. +12015551234)
-                    </p>
-                  )}
+                  {/* Existing phone number with OTP verification */}
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium" style={{ color: "#AAAAAA" }}>
+                      Your existing phone number <span style={{ color: "#555", fontWeight: 400 }}>(for reference)</span>
+                    </label>
+
+                    {otpStepExistingPhone === "verified" ? (
+                      // ── Verified ───────────────────────────────────────────────
+                      <div
+                        className="flex items-center justify-between rounded-lg px-4 py-3"
+                        style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)" }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          <span className="text-sm font-medium" style={{ color: "#22C55E" }}>Verified</span>
+                          <span className="text-sm" style={{ color: "var(--foreground)" }}>{data.voice.existingPhoneNumber}</span>
+                        </div>
+                        <button
+                          type="button"
+                          className="text-xs"
+                          style={{ color: "var(--muted)" }}
+                          onClick={() => {
+                            updateVoice({ existingPhoneNumber: "", existingPhoneNumberVerified: undefined });
+                            setOtpStepExistingPhone("idle");
+                            setOtpCodeExistingPhone("");
+                            setOtpErrorExistingPhone(null);
+                          }}
+                        >
+                          Change
+                        </button>
+                      </div>
+                    ) : otpStepExistingPhone === "sent" ? (
+                      // ── Code sent — enter OTP ──────────────────────────────────
+                      <div className="space-y-3">
+                        <div
+                          className="flex items-center justify-between rounded-lg px-4 py-3"
+                          style={{ background: "var(--card-elevated)", border: "1px solid var(--border2)" }}
+                        >
+                          <span className="text-sm" style={{ color: "var(--foreground)" }}>{data.voice.existingPhoneNumber}</span>
+                          <button
+                            type="button"
+                            className="text-xs"
+                            style={{ color: "var(--muted)" }}
+                            onClick={() => {
+                              setOtpStepExistingPhone("idle");
+                              setOtpCodeExistingPhone("");
+                              setOtpErrorExistingPhone(null);
+                            }}
+                          >
+                            Change
+                          </button>
+                        </div>
+                        <p className="text-xs" style={{ color: "var(--muted)" }}>
+                          A 6-digit code was sent to {data.voice.existingPhoneNumber}. Enter it below to verify.
+                        </p>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={6}
+                            placeholder="123456"
+                            value={otpCodeExistingPhone}
+                            onChange={(e) => { setOtpCodeExistingPhone(e.target.value.replace(/\D/g, "")); setOtpErrorExistingPhone(null); }}
+                            style={{
+                              flex: 1,
+                              background: "var(--card-elevated)",
+                              border: `1px solid ${otpErrorExistingPhone ? "rgba(239,68,68,0.5)" : "var(--border2)"}`,
+                              color: "var(--foreground)",
+                              padding: "10px 16px",
+                              borderRadius: "8px",
+                              fontSize: "14px",
+                              letterSpacing: "0.25em",
+                              outline: "none",
+                            }}
+                          />
+                          <button
+                            type="button"
+                            disabled={otpCodeExistingPhone.length !== 6 || otpVerifyingExistingPhone}
+                            onClick={async () => {
+                              setOtpVerifyingExistingPhone(true);
+                              setOtpErrorExistingPhone(null);
+                              try {
+                                const res = await fetch("/api/phone/verify/confirm", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ phone: data.voice.existingPhoneNumber, otp: otpCodeExistingPhone }),
+                                });
+                                const json = await res.json() as { error?: string };
+                                if (!res.ok) {
+                                  setOtpErrorExistingPhone(json.error ?? "Verification failed.");
+                                  if (res.status === 429) setOtpStepExistingPhone("idle");
+                                } else {
+                                  updateVoice({ existingPhoneNumberVerified: data.voice.existingPhoneNumber });
+                                  setOtpStepExistingPhone("verified");
+                                  setOtpCodeExistingPhone("");
+                                }
+                              } catch {
+                                setOtpErrorExistingPhone("Network error. Please try again.");
+                              } finally {
+                                setOtpVerifyingExistingPhone(false);
+                              }
+                            }}
+                            className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all disabled:opacity-50"
+                            style={{ background: "var(--accent)", whiteSpace: "nowrap" }}
+                          >
+                            {otpVerifyingExistingPhone ? "Verifying…" : "Verify"}
+                          </button>
+                        </div>
+                        {otpErrorExistingPhone && <p className="text-xs" style={{ color: "#EF4444" }}>{otpErrorExistingPhone}</p>}
+                        <button
+                          type="button"
+                          disabled={otpSendingExistingPhone}
+                          onClick={async () => {
+                            setOtpSendingExistingPhone(true);
+                            setOtpErrorExistingPhone(null);
+                            try {
+                              const res = await fetch("/api/phone/verify/send", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ phone: data.voice.existingPhoneNumber }),
+                              });
+                              const json = await res.json() as { error?: string };
+                              if (!res.ok) setOtpErrorExistingPhone(json.error ?? "Failed to resend code.");
+                              else setOtpCodeExistingPhone("");
+                            } catch {
+                              setOtpErrorExistingPhone("Network error. Please try again.");
+                            } finally {
+                              setOtpSendingExistingPhone(false);
+                            }
+                          }}
+                          className="text-xs"
+                          style={{ color: "var(--muted)" }}
+                        >
+                          {otpSendingExistingPhone ? "Sending…" : "Resend code"}
+                        </button>
+                      </div>
+                    ) : (
+                      // ── Idle — enter phone number ──────────────────────────────
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <input
+                            type="tel"
+                            placeholder="+1 (555) 123-4567"
+                            value={data.voice.existingPhoneNumber ?? ""}
+                            onChange={(e) => {
+                              updateVoice({ existingPhoneNumber: e.target.value.trim(), existingPhoneNumberVerified: undefined });
+                              setOtpErrorExistingPhone(null);
+                            }}
+                            style={{
+                              flex: 1,
+                              background: "var(--card-elevated)",
+                              border: `1px solid ${otpErrorExistingPhone ? "rgba(239,68,68,0.5)" : "var(--border2)"}`,
+                              color: "var(--foreground)",
+                              padding: "10px 16px",
+                              borderRadius: "8px",
+                              fontSize: "14px",
+                              outline: "none",
+                            }}
+                          />
+                          {data.voice.existingPhoneNumber?.trim() && (
+                            <button
+                              type="button"
+                              disabled={otpSendingExistingPhone}
+                              onClick={async () => {
+                                setOtpSendingExistingPhone(true);
+                                setOtpErrorExistingPhone(null);
+                                try {
+                                  const res = await fetch("/api/phone/verify/send", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ phone: data.voice.existingPhoneNumber }),
+                                  });
+                                  const json = await res.json() as { error?: string };
+                                  if (!res.ok) {
+                                    setOtpErrorExistingPhone(json.error ?? "Failed to send code.");
+                                  } else {
+                                    setOtpStepExistingPhone("sent");
+                                  }
+                                } catch {
+                                  setOtpErrorExistingPhone("Network error. Please try again.");
+                                } finally {
+                                  setOtpSendingExistingPhone(false);
+                                }
+                              }}
+                              className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all disabled:opacity-50"
+                              style={{ background: "var(--accent)", whiteSpace: "nowrap" }}
+                            >
+                              {otpSendingExistingPhone ? "Sending…" : "Send code"}
+                            </button>
+                          )}
+                        </div>
+                        {otpErrorExistingPhone && <p className="text-xs" style={{ color: "#EF4444" }}>{otpErrorExistingPhone}</p>}
+                        <p className="text-xs" style={{ color: "var(--muted)" }}>
+                          Must be in E.164 format: +1XXXXXXXXXX. Verification required.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
