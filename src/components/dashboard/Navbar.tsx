@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase";
 import { useProfile } from "@/hooks/useProfile";
 import { useTheme } from "@/hooks/useTheme";
 import { getFirstName, getInitials } from "@/lib/types/profile";
+import { useSidebar } from "@/components/dashboard/SidebarContext";
 import type { User } from "@supabase/supabase-js";
 
 interface DashboardNavbarProps {
@@ -12,17 +13,11 @@ interface DashboardNavbarProps {
   subtitle?: string;
 }
 
-const quickLinks = [
-  { href: "/calls", label: "Calls" },
-  { href: "/hr", label: "HR" },
-  { href: "/marketing", label: "Marketing" },
-  { href: "/crm", label: "CRM" },
-];
-
 export function DashboardNavbar({ title, subtitle }: DashboardNavbarProps) {
   const { profile, loading: profileLoading } = useProfile();
   const [user, setUser] = useState<User | null>(null);
   const { theme, toggleTheme } = useTheme();
+  const { setMobileOpen } = useSidebar();
 
   useEffect(() => {
     const supabase = createClient();
@@ -54,7 +49,7 @@ export function DashboardNavbar({ title, subtitle }: DashboardNavbarProps) {
 
   return (
     <header
-      className="sticky top-0 z-40 flex min-h-[56px] items-center gap-4 px-5 py-2.5 sm:px-6 lg:px-7"
+      className="sticky top-0 z-40 flex min-h-[48px] items-center gap-3 px-4 py-2 sm:px-6 lg:px-7"
       style={{
         background: "var(--nav-bg)",
         borderBottom: "1px solid var(--border)",
@@ -62,10 +57,24 @@ export function DashboardNavbar({ title, subtitle }: DashboardNavbarProps) {
         WebkitBackdropFilter: "blur(20px)",
       }}
     >
+      {/* Hamburger — mobile only (< md) */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="md:hidden flex h-9 w-9 items-center justify-center rounded-lg shrink-0 transition-colors"
+        style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--muted)" }}
+        aria-label="Open navigation menu"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+
       {/* Title */}
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1 md:flex-none">
         <h1
-          className="truncate text-[15px] font-semibold leading-snug"
+          className="truncate text-[14px] font-semibold leading-snug"
           style={{
             fontFamily: "Georgia, 'Times New Roman', serif",
             fontStyle: "italic",
@@ -82,48 +91,7 @@ export function DashboardNavbar({ title, subtitle }: DashboardNavbarProps) {
         )}
       </div>
 
-      <div className="hidden flex-1 items-center justify-center xl:flex">
-        <div
-          className="flex items-center gap-2 rounded-full px-2 py-1"
-          style={{
-            background: "linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,122,26,0.03))",
-            border: "1px solid var(--border)",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
-          }}
-        >
-          <span
-            className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
-            style={{
-              background: "rgba(255,122,26,0.08)",
-              color: "var(--accent)",
-              border: "1px solid rgba(255,122,26,0.14)",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_12px_rgba(255,122,26,0.55)]" />
-            Workspace live
-          </span>
-          <span className="h-4 w-px bg-[var(--border)]" />
-          {quickLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="rounded-full px-3 py-1 text-[12px] font-medium transition-all duration-150"
-              style={{ color: "var(--muted)", fontFamily: "var(--font-sans)" }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.background = "var(--surface)";
-                (e.currentTarget as HTMLElement).style.color = "var(--foreground)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.background = "transparent";
-                (e.currentTarget as HTMLElement).style.color = "var(--muted)";
-              }}
-            >
-              {link.label}
-            </a>
-          ))}
-        </div>
-      </div>
+      <div className="hidden md:block flex-1" />
 
       {/* Right side */}
       <div className="flex shrink-0 items-center gap-1.5">

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { AGENTS, type AgentType, getAgentById } from "@/lib/agents";
 import { createClient } from "@/lib/supabase";
 import { loadWizardProgress, saveWizardProgress } from "@/lib/wizard/storage";
+import { canCreateAgent, PLAN_LIMITS } from "@/lib/plan-limits";
 import {
   AVAILABLE_AGENT_TYPES,
   BUSINESS_CATEGORIES,
@@ -92,14 +93,14 @@ function WizardContent() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [planLimitReached, setPlanLimitReached] = useState(false);
+  const [planLimitInfo, setPlanLimitInfo] = useState<{
+    plan: string;
+    limit: { agents: number; calls: number };
+    current: number;
+  } | null>(null);
   const [calendarChecking, setCalendarChecking] = useState(false);
-  const [testCallActive, setTestCallActive] = useState(false);
-  const [testCallConnecting, setTestCallConnecting] = useState(false);
-  const [micModalOpen, setMicModalOpen] = useState(false);
   const [provisioning, setProvisioning] = useState(false);
-  const [vapiPhoneNumberId, setVapiPhoneNumberId] = useState<string | null>(null);
-  const [vapiAssistantId, setVapiAssistantId] = useState<string | null>(null);
-  const vapiRef = useRef<import("@vapi-ai/web").default | null>(null);
 
   // HR-specific state
   const [hrUploadedFiles, setHrUploadedFiles] = useState<string[]>([]);
@@ -107,14 +108,6 @@ function WizardContent() {
   const [hrSessionId, setHrSessionId] = useState<string | null>(null);
   const hrFileRef = useRef<HTMLInputElement>(null);
 
-  // OTP verification state for "Forward calls to" field
-  const [pendingForwardTo, setPendingForwardTo] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [otpVerified, setOtpVerified] = useState(false);
-  const [otpSending, setOtpSending] = useState(false);
-  const [otpVerifying, setOtpVerifying] = useState(false);
-  const [otpError, setOtpError] = useState<string | null>(null);
 
   // Marketing-specific state
   const [marketingSessionId, setMarketingSessionId] = useState<string | null>(null);
@@ -177,24 +170,19 @@ function WizardContent() {
 
       const agentToLoad = validPreselect ?? "voice";
       const saved = await loadWizardProgress(supabase, user.id, agentToLoad);
+
+      // Block new agent creation if plan limit is reached
+      if (isNew || !saved) {
+        const check = await canCreateAgent(user.id, supabase);
+        if (!check.allowed) {
+          setPlanLimitReached(true);
+          setPlanLimitInfo({ plan: check.plan, limit: check.limit, current: check.current });
+          setLoading(false);
+          return;
+        }
+      }
       if (saved && !isNew) {
         setData(saved.data);
-        if (saved.data.agentType === "voice") {
-          // Restore vapiPhoneNumberId from persisted voice_settings
-          const savedVapiId = (saved.data.voice as unknown as Record<string, unknown>)
-            .vapiPhoneNumberId as string | undefined;
-          if (savedVapiId) setVapiPhoneNumberId(savedVapiId);
-
-          // Load vapi_assistant_id so test call button is only shown when an assistant exists
-          const { data: assistSess } = await supabase
-            .from("agent_wizard_sessions")
-            .select("vapi_assistant_id")
-            .eq("user_id", user.id)
-            .eq("agent_type", "voice")
-            .maybeSingle();
-          const existingAssistId = (assistSess as { vapi_assistant_id?: string } | null)?.vapi_assistant_id;
-          if (existingAssistId) setVapiAssistantId(existingAssistId);
-        }
         // Bug 2: Load HR knowledge base files so they appear on reconfigure and review
         if (saved.data.agentType === "hr") {
           const { data: hrSess } = await supabase
@@ -254,15 +242,6 @@ function WizardContent() {
     }
     init();
   }, [supabase, validPreselect]);
-
-  // Bug 3: Initialise OTP verified state once wizard data finishes loading
-  useEffect(() => {
-    if (!loading && data.voice.forwardTo) {
-      setPendingForwardTo(data.voice.forwardTo);
-      setOtpVerified(true);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading]);
 
   // Auto-detect Google calendar connection when reaching step 3
   useEffect(() => {
@@ -379,13 +358,16 @@ function WizardContent() {
         setSaveError(result.error ?? "Failed to provision phone number.");
         return;
       }
-      updateVoice({ phoneNumber: result.phoneNumber, phoneOption: "new" });
-      setVapiPhoneNumberId(result.vapiPhoneNumberId ?? null);
-      // Persist immediately so the number survives a page reload
+      const newVapiId = result.vapiPhoneNumberId ?? null;
+      // Update React state — vapiPhoneNumberId now lives inside voice data, not separate state.
+      updateVoice({ phoneNumber: result.phoneNumber, phoneOption: "new", vapiPhoneNumberId: newVapiId });
+      // Persist immediately so the number and vapiPhoneNumberId survive a page reload.
+      // Build the voice object explicitly: React batches state updates so data.voice
+      // does not yet reflect the updateVoice() call above at this point in the async function.
       if (userId) {
         await saveWizardProgress(supabase, userId, {
           ...data,
-          voice: { ...data.voice, phoneNumber: result.phoneNumber, phoneOption: "new" },
+          voice: { ...data.voice, phoneNumber: result.phoneNumber, phoneOption: "new", vapiPhoneNumberId: newVapiId },
         }, step);
       }
     } catch (err) {
@@ -438,52 +420,6 @@ function WizardContent() {
     }
   }
 
-  async function handleSendOtp() {
-    setOtpSending(true);
-    setOtpError(null);
-    try {
-      const res = await fetch("/api/phone/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber: pendingForwardTo }),
-      });
-      const result = await res.json() as { success?: boolean; error?: string };
-      if (!res.ok || !result.success) {
-        setOtpError(result.error ?? "Failed to send OTP. Please try again.");
-      } else {
-        setOtpSent(true);
-      }
-    } catch {
-      setOtpError("Failed to send OTP. Please try again.");
-    } finally {
-      setOtpSending(false);
-    }
-  }
-
-  async function handleVerifyOtp() {
-    setOtpVerifying(true);
-    setOtpError(null);
-    try {
-      const res = await fetch("/api/phone/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber: pendingForwardTo, code: otpCode }),
-      });
-      const result = await res.json() as { success?: boolean; error?: string };
-      if (!res.ok || !result.success) {
-        setOtpError(result.error ?? "Invalid or expired code. Please try again.");
-      } else {
-        updateVoice({ forwardTo: pendingForwardTo });
-        setOtpVerified(true);
-        setOtpCode("");
-      }
-    } catch {
-      setOtpError("Verification failed. Please try again.");
-    } finally {
-      setOtpVerifying(false);
-    }
-  }
-
   async function handleMarketingLaunch() {
     if (!userId) { setSaveError("Not authenticated"); return; }
     setSaving(true);
@@ -524,7 +460,7 @@ function WizardContent() {
       const vapiResponse = await fetch("/api/vapi/update-assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ wizardData: data, vapiPhoneNumberId }),
+        body: JSON.stringify({ wizardData: data }),
       });
 
       const vapiResult = await vapiResponse.json();
@@ -538,7 +474,6 @@ function WizardContent() {
       if (error) { setSaveError(error); return; }
 
       if (vapiResult.assistantId) {
-        setVapiAssistantId(vapiResult.assistantId);
         await supabase
           .from("agent_wizard_sessions")
           .update({ vapi_assistant_id: vapiResult.assistantId })
@@ -552,127 +487,6 @@ function WizardContent() {
       setSaveError(err instanceof Error ? err.message : "Failed to launch Voice Agent");
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function startVapiCall() {
-    const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY;
-    if (!publicKey) {
-      setSaveError("NEXT_PUBLIC_VAPI_PUBLIC_KEY is missing from the build. Redeploy after adding it to Vercel environment variables.");
-      return;
-    }
-
-    // Diagnostic: log the first/last 4 chars so you can verify this matches your Vapi public key
-    console.log("[vapi] Using public key:", publicKey.slice(0, 4) + "…" + publicKey.slice(-4));
-
-    setSaveError(null);
-    setTestCallConnecting(true);
-
-    const { data: sessionRow } = await supabase
-      .from("agent_wizard_sessions")
-      .select("vapi_assistant_id")
-      .eq("user_id", userId!)
-      .eq("agent_type", data.agentType ?? "voice")
-      .maybeSingle();
-
-    const assistantId = (sessionRow as { vapi_assistant_id?: string } | null)
-      ?.vapi_assistant_id;
-
-    if (!assistantId) {
-      setSaveError("No assistant found. Click 'Go Live' first to create your assistant.");
-      setTestCallConnecting(false);
-      return;
-    }
-
-    try {
-      if (vapiRef.current) {
-        vapiRef.current.stop();
-        vapiRef.current = null;
-      }
-
-      const Vapi = (await import("@vapi-ai/web")).default;
-      const vapi = new Vapi(publicKey);
-      vapiRef.current = vapi;
-
-      vapi.on("call-start", () => {
-        console.log("[vapi] Call started — assistantId:", assistantId);
-        setTestCallConnecting(false);
-        setTestCallActive(true);
-      });
-      vapi.on("call-end", () => {
-        console.log("[vapi] Call ended");
-        setTestCallActive(false);
-        setTestCallConnecting(false);
-        vapiRef.current = null;
-      });
-      vapi.on("speech-start", () => { console.log("[vapi] AI speaking"); });
-      vapi.on("speech-end", () => { console.log("[vapi] AI stopped speaking"); });
-      vapi.on("message", (msg: unknown) => { console.log("[vapi] Message:", msg); });
-      vapi.on("error", (err: unknown) => {
-        console.error("[vapi] Error:", err);
-        setTestCallActive(false);
-        setTestCallConnecting(false);
-        vapiRef.current = null;
-        const msg =
-          err instanceof Error
-            ? err.message
-            : typeof err === "object" && err !== null && "message" in err
-              ? String((err as { message: unknown }).message)
-              : "Test call encountered an error.";
-        setSaveError(msg);
-      });
-
-      console.log("[vapi] Starting call — assistantId:", assistantId, "| public key prefix:", publicKey.slice(0, 8));
-      await vapi.start(assistantId);
-      setTestCallConnecting(false);
-    } catch (err) {
-      vapiRef.current = null;
-      setTestCallConnecting(false);
-      setSaveError(err instanceof Error ? err.message : "Failed to start test call.");
-    }
-  }
-
-  async function handleTestCall() {
-    const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY;
-    if (!publicKey) {
-      setSaveError("NEXT_PUBLIC_VAPI_PUBLIC_KEY is not set — test calls require a Vapi public key.");
-      return;
-    }
-
-    // End active call
-    if (testCallActive || testCallConnecting) {
-      vapiRef.current?.stop();
-      vapiRef.current = null;
-      setTestCallActive(false);
-      setTestCallConnecting(false);
-      return;
-    }
-
-    // Check current microphone permission status
-    try {
-      const result = await navigator.permissions.query({ name: "microphone" as PermissionName });
-      if (result.state === "granted") {
-        // Permission already granted — start immediately
-        await startVapiCall();
-      } else {
-        // 'prompt' or 'denied' — show the permission modal
-        setMicModalOpen(true);
-      }
-    } catch {
-      // permissions.query not supported (some browsers) — fall back to direct request
-      setMicModalOpen(true);
-    }
-  }
-
-  async function handleRequestMicPermission() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((t) => t.stop());
-      setMicModalOpen(false);
-      await startVapiCall();
-    } catch {
-      setMicModalOpen(false);
-      setSaveError("Microphone access denied. Please allow it in your browser settings to test calls.");
     }
   }
 
@@ -691,6 +505,88 @@ function WizardContent() {
             style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }}
           />
           Loading your progress...
+        </div>
+      </>
+    );
+  }
+
+  if (planLimitReached && planLimitInfo) {
+    const { plan, limit, current } = planLimitInfo;
+    const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
+    const agentLimit = limit.agents;
+    return (
+      <>
+        <DashboardNavbar title="Setup Wizard" />
+        <div className="flex min-h-[60vh] items-center justify-center p-8">
+          <div
+            className="w-full max-w-md space-y-5 rounded-2xl p-7"
+            style={{ background: "var(--card-elevated)", border: "1px solid rgba(232,123,44,0.3)", boxShadow: "0 0 40px rgba(232,123,44,0.08)" }}
+          >
+            <div
+              className="flex h-14 w-14 items-center justify-center rounded-xl text-3xl"
+              style={{ background: "rgba(232,123,44,0.12)" }}
+            >
+              🚀
+            </div>
+
+            <div>
+              <h2 className="font-heading text-2xl font-bold text-white">Agent limit reached</h2>
+              <p className="mt-2 text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.5)" }}>
+                Your <span className="text-white font-medium">{planLabel}</span> plan allows{" "}
+                <span className="text-white font-medium">{agentLimit} active agent{agentLimit !== 1 ? "s" : ""}</span>.
+                You currently have {current} active. Upgrade your plan to create additional agents.
+              </p>
+            </div>
+
+            <div
+              className="grid grid-cols-2 gap-3 rounded-xl p-4"
+              style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+            >
+              <div>
+                <p className="text-xs" style={{ color: "rgba(255,255,255,0.38)" }}>Current plan</p>
+                <p className="mt-0.5 text-sm font-semibold text-white capitalize">{plan}</p>
+              </div>
+              <div>
+                <p className="text-xs" style={{ color: "rgba(255,255,255,0.38)" }}>Agent limit</p>
+                <p className="mt-0.5 text-sm font-semibold" style={{ color: "#E87B2C" }}>
+                  {agentLimit >= 999 ? "Unlimited" : agentLimit}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs" style={{ color: "rgba(255,255,255,0.38)" }}>Pro plan agents</p>
+                <p className="mt-0.5 text-sm font-semibold text-white">3 agents</p>
+              </div>
+              <div>
+                <p className="text-xs" style={{ color: "rgba(255,255,255,0.38)" }}>Elite plan agents</p>
+                <p className="mt-0.5 text-sm font-semibold text-white">Unlimited</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2.5 sm:flex-row">
+              <a
+                href="/pricing"
+                className="flex-1 rounded-lg py-2.5 text-center text-sm font-semibold text-white transition-all hover:brightness-110"
+                style={{ background: "#E87B2C" }}
+              >
+                Upgrade to Pro →
+              </a>
+              <a
+                href="/billing"
+                className="flex-1 rounded-lg py-2.5 text-center text-sm font-medium transition-colors"
+                style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "rgba(255,255,255,0.6)" }}
+              >
+                View Plans
+              </a>
+            </div>
+
+            <a
+              href="/agents"
+              className="block text-center text-xs transition-colors"
+              style={{ color: "rgba(255,255,255,0.28)" }}
+            >
+              ← Back to agents
+            </a>
+          </div>
         </div>
       </>
     );
@@ -914,7 +810,7 @@ function WizardContent() {
                     >
                       {done ? "✓" : i + 1}
                     </div>
-                    <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>{label}</p>
+                    <p className="hidden text-sm font-medium sm:block" style={{ color: "var(--foreground)" }}>{label}</p>
                   </div>
                 );
               })}
@@ -1721,7 +1617,7 @@ function WizardContent() {
                   const label = opt === "new" ? "Get a new number" : "Forward my existing number";
                   const desc =
                     opt === "new"
-                      ? "Provision a dedicated Twilio number for your agent"
+                      ? "Provision a dedicated phone number for your agent"
                       : "Keep your current number — calls are forwarded to the AI";
                   const icon = opt === "new" ? "📱" : "↪️";
                   return (
@@ -1778,7 +1674,7 @@ function WizardContent() {
                         Claim your dedicated number
                       </p>
                       <p className="mb-4 text-xs leading-relaxed text-[#888]">
-                        We&apos;ll purchase a US Twilio number and link it to your agent automatically.
+                        We&apos;ll provision a US phone number and link it to your agent automatically.
                       </p>
                       <Button
                         onClick={handleProvisionNumber}
@@ -1802,17 +1698,36 @@ function WizardContent() {
                 </div>
               )}
 
-              {/* "Forward existing number" — input field */}
+              {/* "Forward existing number" — input field + instructions */}
               {data.voice.phoneOption === "forward" && (
-                <div>
+                <div className="space-y-4">
+                  <div
+                    className="rounded-xl p-4"
+                    style={{ background: "rgba(255,122,26,0.05)", border: "1px solid rgba(255,122,26,0.18)" }}
+                  >
+                    <p className="mb-1 text-sm font-semibold" style={{ color: "var(--accent)" }}>How forwarding works</p>
+                    <ol className="mt-2 space-y-1.5 text-xs leading-relaxed text-[#888]">
+                      <li>1. First provision a dedicated number using the "Get a new number" option — this becomes your AI line.</li>
+                      <li>2. Log into your existing carrier (Twilio, Google Voice, etc.) and set up call forwarding to your AI number.</li>
+                      <li>3. Enter your existing number below for reference — it is displayed in your dashboard but does not change call routing.</li>
+                    </ol>
+                  </div>
                   <Input
-                    label="Your existing phone number"
+                    label="Your existing phone number (for reference)"
                     type="tel"
                     placeholder="+1 (555) 123-4567"
-                    hint="Calls to this number will be answered by your AI Receptionist"
-                    value={data.voice.phoneNumber}
-                    onChange={(e) => updateVoice({ phoneNumber: e.target.value })}
+                    hint="Must be in E.164 format: +1XXXXXXXXXX"
+                    value={data.voice.existingPhoneNumber ?? ""}
+                    onChange={(e) => {
+                      const raw = e.target.value.trim();
+                      updateVoice({ existingPhoneNumber: raw });
+                    }}
                   />
+                  {data.voice.existingPhoneNumber && !/^\+[1-9]\d{6,14}$/.test(data.voice.existingPhoneNumber.replace(/[\s\-().]/g, "")) && (
+                    <p className="text-xs font-medium" style={{ color: "#EF4444" }}>
+                      Enter a valid phone number in E.164 format (e.g. +12015551234)
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -1878,130 +1793,19 @@ function WizardContent() {
                 </ReviewSection>
               </dl>
 
-              {/* Microphone permission modal */}
-              {micModalOpen && (
-                <div
-                  className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                  style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
-                >
-                  <div
-                    className="w-full max-w-sm rounded-2xl p-6"
-                    style={{ background: "var(--card)", border: "1px solid var(--border2)", boxShadow: "var(--shadow-card-hover)" }}
-                  >
-                    {/* Icon */}
-                    <div
-                      className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full"
-                      style={{ background: "rgba(255,122,26,0.10)", border: "1px solid rgba(255,122,26,0.20)" }}
-                    >
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                        <line x1="12" y1="19" x2="12" y2="23"/>
-                        <line x1="8" y1="23" x2="16" y2="23"/>
-                      </svg>
-                    </div>
-
-                    <h3
-                      className="mb-2 text-center text-base font-bold"
-                      style={{ fontFamily: "var(--font-heading)", color: "var(--foreground)" }}
-                    >
-                      Microphone Access Required
-                    </h3>
-                    <p className="mb-4 text-center text-sm" style={{ color: "var(--muted)" }}>
-                      To test your AI agent, please allow microphone access when your browser asks.
-                    </p>
-
-                    {/* Browser instructions */}
-                    <div
-                      className="mb-5 space-y-2 rounded-xl p-3"
-                      style={{ background: "var(--card2)", border: "1px solid var(--border)" }}
-                    >
-                      <p className="text-xs font-medium" style={{ color: "var(--muted)", fontFamily: "var(--font-sans)" }}>
-                        Browser instructions:
-                      </p>
-                      <p className="text-xs" style={{ color: "var(--foreground)" }}>
-                        <span className="font-semibold">Chrome:</span> Click the 🎥 icon in the address bar → Allow
-                      </p>
-                      <p className="text-xs" style={{ color: "var(--foreground)" }}>
-                        <span className="font-semibold">Firefox:</span> Click the microphone icon in the address bar → Allow
-                      </p>
-                      <p className="text-xs" style={{ color: "var(--foreground)" }}>
-                        <span className="font-semibold">Safari:</span> Safari menu → Settings for This Website → Microphone → Allow
-                      </p>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <button
-                        className="flex-1 rounded-lg py-2 text-sm font-medium transition-colors"
-                        style={{ background: "var(--card2)", border: "1px solid var(--border2)", color: "var(--muted)", fontFamily: "var(--font-sans)" }}
-                        onClick={() => setMicModalOpen(false)}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        className="flex-1 rounded-lg py-2 text-sm font-semibold text-white transition-all"
-                        style={{ background: "var(--accent)", fontFamily: "var(--font-sans)" }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--accent-hover)"; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--accent)"; }}
-                        onClick={handleRequestMicPermission}
-                      >
-                        Request Permission
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Test Call — only visible once an assistant has been created */}
-              {vapiAssistantId && (
-                <div
-                  className="mb-6 rounded-xl p-5"
-                  style={{ background: "rgba(255,122,26,0.04)", border: "1px solid rgba(255,122,26,0.15)" }}
-                >
-                  <p className="mb-1 font-heading font-semibold text-white">Test your agent</p>
-                  <p className="mb-1 text-sm text-[#888]">
-                    Have a live conversation with your AI Receptionist before going live.
-                  </p>
-                  <p className="mb-4 text-xs" style={{ color: "var(--muted)" }}>
-                    Test calls use minimal credits (~$0.05-0.10 per minute)
-                  </p>
-                  <Button
-                    variant={testCallActive ? "ghost" : "secondary"}
-                    size="md"
-                    onClick={handleTestCall}
-                    disabled={testCallConnecting}
-                  >
-                    {testCallActive
-                      ? "🔴 End call"
-                      : testCallConnecting
-                        ? "⏳ Starting..."
-                        : "🎙️ Start test call"}
-                  </Button>
-                  {testCallActive && (
-                    <p className="mt-3 text-sm text-[var(--accent)] animate-pulse">
-                      Call in progress — speak now…
-                    </p>
-                  )}
-                  {testCallConnecting && (
-                    <p className="mt-3 text-sm text-[#888] animate-pulse">
-                      Connecting to your agent…
-                    </p>
-                  )}
-                </div>
-              )}
             </div>
           )}
 
           {/* Navigation */}
           <div
-            className="mt-8 flex justify-between gap-4 pt-6"
+            className="mt-8 flex flex-wrap items-center justify-between gap-3 pt-6"
             style={{ borderTop: "1px solid var(--border)" }}
           >
             <Button variant="ghost" onClick={handleBack} disabled={step === 0 || saving}>
               Back
             </Button>
             {step < currentSteps.length - 1 ? (
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 {((isHR && step === 2) || (isMarketing && step === 3) || (data.agentType === "voice" && (step === 3 || step === 4))) && (
                   <button
                     type="button"

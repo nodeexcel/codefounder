@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { sendEmail } from "@/lib/email/resend";
+import { Resend } from "resend";
 import { emailOtpHtml } from "@/lib/email/templates/email-otp";
+
+// Resend free tier only allows sending from onboarding@resend.dev
+// or a verified domain. Hardcode the safe default here so a misconfigured
+// RESEND_FROM_EMAIL env var can never silently break email delivery.
+const FROM_EMAIL = "onboarding@resend.dev";
 
 const OTP_EXPIRY_MINUTES = 10;
 const MAX_OTP_PER_HOUR = 3;
@@ -58,11 +63,22 @@ export async function POST(request: Request) {
 
   // Rate limit: at most MAX_OTP_PER_HOUR requests per hour per email
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-  const { count: recentCount } = await admin
+  const { count: recentCount, error: rateError } = await admin
     .from("email_otps")
     .select("id", { count: "exact", head: true })
     .eq("email", trimmedEmail)
     .gte("created_at", oneHourAgo);
+
+  if (rateError) {
+    console.error("[send-email-otp] rate-limit check failed — code:", rateError.code, "msg:", rateError.message);
+    if (rateError.code === "42P01") {
+      // Table does not exist — migration has not been run
+      return NextResponse.json(
+        { error: "Service configuration error. Please contact support. (OTP table missing)" },
+        { status: 503 },
+      );
+    }
+  }
 
   if ((recentCount ?? 0) >= MAX_OTP_PER_HOUR) {
     return NextResponse.json(
@@ -172,23 +188,40 @@ export async function POST(request: Request) {
   });
 
   if (insertError) {
-    console.error("[send-email-otp] DB insert failed:", insertError.message);
+    console.error("[send-email-otp] DB insert failed — code:", insertError.code, "msg:", insertError.message, "details:", insertError.details);
     return NextResponse.json({ error: "Failed to generate verification code" }, { status: 500 });
   }
 
-  const displayName = trimmedName || normalizedUsername;
-  const { success, error: emailErr } = await sendEmail(
-    trimmedEmail,
-    "Your CodeFounder verification code",
-    emailOtpHtml({ name: displayName, otp, expiryMinutes: OTP_EXPIRY_MINUTES }),
-  );
+  const resendApiKey = process.env.RESEND_API_KEY;
+  console.log("[send-email-otp] RESEND_API_KEY set:", !!resendApiKey);
+  console.log("[send-email-otp] RESEND_FROM_EMAIL env:", process.env.RESEND_FROM_EMAIL ?? "(not set — using hardcoded default)");
+  console.log("[send-email-otp] Sending from:", FROM_EMAIL, "→ to:", trimmedEmail);
 
-  if (!success) {
-    console.error("[send-email-otp] email send failed:", emailErr);
+  if (!resendApiKey) {
+    console.error("[send-email-otp] RESEND_API_KEY is missing — cannot send email");
+    await admin.from("email_otps").delete().eq("email", trimmedEmail).is("verified_at", null);
+    return NextResponse.json({ error: "Email service not configured" }, { status: 500 });
+  }
+
+  const resend = new Resend(resendApiKey);
+  const displayName = trimmedName || normalizedUsername;
+
+  const { data: emailData, error: resendError } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to: trimmedEmail,
+    subject: "Your CodeFounder verification code",
+    html: emailOtpHtml({ name: displayName, otp, expiryMinutes: OTP_EXPIRY_MINUTES }),
+  });
+
+  if (resendError) {
+    console.log("Resend error:", resendError);
+    console.error("[send-email-otp] Resend send failed — name:", resendError.name, "message:", resendError.message);
     // Clean up the OTP we just inserted so rate limit isn't wasted
     await admin.from("email_otps").delete().eq("email", trimmedEmail).is("verified_at", null);
     return NextResponse.json({ error: "Failed to send verification email. Please try again." }, { status: 500 });
   }
+
+  console.log("[send-email-otp] Email sent successfully, Resend id:", emailData?.id);
 
   console.log("[send-email-otp] OTP sent to", trimmedEmail, "for user", userId);
   return NextResponse.json({ success: true });

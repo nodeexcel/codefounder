@@ -17,8 +17,9 @@ export async function POST(request: Request) {
     );
   }
 
-  // Parse body
-  let body: { wizardData?: WizardFormData; vapiPhoneNumberId?: string };
+  // Parse body — vapiPhoneNumberId is now carried inside wizardData.voice.vapiPhoneNumberId.
+  // The top-level vapiPhoneNumberId field is kept for backward compatibility only.
+  let body: { wizardData?: WizardFormData; vapiPhoneNumberId?: string | null };
   try {
     body = await request.json();
   } catch {
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
 
   const { data: session } = await adminSupabase
     .from("agent_wizard_sessions")
-    .select("vapi_assistant_id, voice_settings")
+    .select("vapi_assistant_id, voice_settings, twilio_phone_number")
     .eq("user_id", user.id)
     .eq("agent_type", body.wizardData.agentType ?? "voice")
     .maybeSingle();
@@ -56,6 +57,7 @@ export async function POST(request: Request) {
   const sessionRow = session as {
     vapi_assistant_id?: string | null;
     voice_settings?: Record<string, unknown> | null;
+    twilio_phone_number?: string | null;
   } | null;
   const existingAssistantId = sessionRow?.vapi_assistant_id ?? null;
   const sessionVoice = sessionRow?.voice_settings ?? null;
@@ -74,7 +76,8 @@ export async function POST(request: Request) {
   const systemPrompt = buildVapiSystemPrompt(body.wizardData);
   const agentName = body.wizardData.voice.agentName.trim();
   const businessName = body.wizardData.business.businessName.trim();
-  const firstMessage = `Hello! You've reached ${businessName}. I'm ${agentName}, your AI assistant. Please note you are speaking with an AI. How can I help you today?`;
+  // Natural greeting — single sentence, discloses AI without the stilted "Please note" preamble
+  const firstMessage = `Hi, you've reached ${businessName}! I'm ${agentName}, an AI assistant. How can I help you today?`;
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
   const calendarToolServer: Record<string, unknown> = {
@@ -130,7 +133,7 @@ export async function POST(request: Request) {
   const modelPayload = {
     provider: "openai",
     model: "gpt-4o-mini",
-    temperature: 0.7,
+    temperature: 0.4,     // was 0.7 — lower = more focused answers, less hallucination
     maxTokens: 150,
     messages: [{ role: "system", content: systemPrompt }],
     tools: transferCallTool
@@ -145,14 +148,29 @@ export async function POST(request: Request) {
   const selectedLanguages = body.wizardData.voice.languages ?? ["English"];
   const isMultiLang = selectedLanguages.length > 1;
 
-  const transcriberConfig = {
-    provider: "deepgram",
-    model: "nova-2",
-    language: isMultiLang ? "multi" : "en",
-    smartFormat: true,
-    endpointing: 150,
-  };
+  // Multi-language: Deepgram nova-2 accepts language:"multi" to enable automatic
+  // language detection across the call. Endpointing is raised to 200ms so the
+  // model has enough audio to identify the language before cutting the utterance.
+  // Single-language: stay at 100ms for faster end-of-utterance detection.
+  const transcriberConfig = isMultiLang
+    ? {
+        provider: "deepgram",
+        model: "nova-2",
+        language: "multi",
+        smartFormat: true,
+        endpointing: 200,
+      }
+    : {
+        provider: "deepgram",
+        model: "nova-2",
+        language: "en",
+        smartFormat: true,
+        endpointing: 100,
+      };
 
+  // OpenAI TTS chosen deliberately over Cartesia: Cartesia Sonic Multilingual
+  // does not support Punjabi or Urdu. OpenAI's neural TTS handles all four
+  // target languages (English, Hindi, Urdu, Punjabi) without extra cost.
   const voiceConfig = {
     provider: "openai",
     voiceId: "nova",
@@ -161,18 +179,24 @@ export async function POST(request: Request) {
   const latencyConfig = {
     responseDelaySeconds: 0,
     llmRequestDelaySeconds: 0,
-    numWordsToInterruptAssistant: 2,
+    numWordsToInterruptAssistant: 1,  // was 2 — one word triggers barge-in for faster interrupts
     backgroundDenoisingEnabled: true,
-    fillersEnabled: true,
+    fillersEnabled: true,             // "mm-hmm", "I see" reduces perceived response latency
   };
 
   const endCallConfig = {
     endCallFunctionEnabled: true,
-    endCallPhrases: ["goodbye", "bye", "thank you bye", "that's all", "talk to you later"],
-    silenceTimeoutSeconds: 20,
+    endCallPhrases: ["goodbye", "thank you goodbye", "have a good day", "talk to you later"],
+    silenceTimeoutSeconds: 30,
   };
 
   let assistantId: string;
+
+  // Webhook URL — tells Vapi where to send end-of-call-report, call-ended, etc.
+  // Without this field the assistant is created without a webhook and no calls
+  // are ever written to call_logs.
+  const vapiWebhookUrl = `${siteUrl}/api/vapi/webhook`;
+  const vapiWebhookSecret = process.env.VAPI_WEBHOOK_SECRET ?? undefined;
 
   if (existingAssistantId) {
     // ── User already has an assistant — PATCH it to update the prompt ──────────
@@ -182,11 +206,13 @@ export async function POST(request: Request) {
       model: modelPayload,
       transcriber: transcriberConfig,
       voice: voiceConfig,
-      startSpeakingPlan: { waitSeconds: 0 },
+      startSpeakingPlan: { waitSeconds: 0, smartEndpointingEnabled: true },
       ...latencyConfig,
       ...endCallConfig,
       ...forwardingConfig,
       ...(kbFileIds.length > 0 ? { knowledgeBase: { fileIds: kbFileIds } } : {}),
+      serverUrl: vapiWebhookUrl,
+      ...(vapiWebhookSecret ? { serverUrlSecret: vapiWebhookSecret } : {}),
     };
     console.log("[vapi/update-assistant] PATCH payload:", JSON.stringify(patchPayload, null, 2));
     const patchRes = await fetch(
@@ -220,10 +246,12 @@ export async function POST(request: Request) {
       model: modelPayload,
       transcriber: transcriberConfig,
       voice: voiceConfig,
-      startSpeakingPlan: { waitSeconds: 0 },
+      startSpeakingPlan: { waitSeconds: 0, smartEndpointingEnabled: true },
       ...latencyConfig,
       ...endCallConfig,
       ...(kbFileIds.length > 0 ? { knowledgeBase: { fileIds: kbFileIds } } : {}),
+      serverUrl: vapiWebhookUrl,
+      ...(vapiWebhookSecret ? { serverUrlSecret: vapiWebhookSecret } : {}),
     };
     console.log("[vapi/update-assistant] POST payload:", JSON.stringify(createPayload, null, 2));
     const createRes = await fetch("https://api.vapi.ai/assistant", {
@@ -247,13 +275,72 @@ export async function POST(request: Request) {
     const created = await createRes.json();
     assistantId = created.id as string;
     console.log("[vapi/update-assistant] created new assistant:", assistantId, "for user:", user.id);
+
+    // Persist assistantId server-side immediately so the webhook can resolve user_id
+    // even if the client-side DB write in the wizard fails (e.g. network error after launch).
+    await adminSupabase
+      .from("agent_wizard_sessions")
+      .update({ vapi_assistant_id: assistantId, updated_at: new Date().toISOString() })
+      .eq("user_id", user.id)
+      .eq("agent_type", body.wizardData.agentType ?? "voice");
+    console.log("[vapi/update-assistant] saved vapi_assistant_id server-side:", assistantId);
   }
 
-  // ── Assign Twilio number to assistant in Vapi (if provisioned) ───────────
-  const vapiPhoneNumberId =
+  // ── Link Telnyx number to assistant in Vapi ───────────────────────────────
+  // Primary source: vapiPhoneNumberId is now persisted inside wizardData.voice.vapiPhoneNumberId.
+  // Fallback 1: legacy top-level body field (backward compat for in-flight requests during deploy).
+  // Fallback 2: DB voice_settings.vapiPhoneNumberId (recovery path — e.g., Vapi import retry needed).
+  let vapiPhoneNumberId: string | null =
+    body.wizardData?.voice?.vapiPhoneNumberId ??
     body.vapiPhoneNumberId ??
     (sessionVoice?.vapiPhoneNumberId as string | undefined) ??
     null;
+
+  // Retry: provision-number succeeded (Telnyx number purchased) but Vapi import failed,
+  // so vapiPhoneNumberId was never obtained. Attempt the Vapi import now.
+  // GUARD: only do this for platform-provisioned numbers (phoneOption === "new").
+  // Never attempt to import personal forwarding numbers (phoneOption === "forward").
+  const agentType = body.wizardData.agentType ?? "voice";
+  if (
+    !vapiPhoneNumberId &&
+    sessionRow?.twilio_phone_number &&
+    body.wizardData?.voice?.phoneOption === "new"
+  ) {
+    const telnyxApiKey = process.env.TELNYX_API_KEY;
+    if (telnyxApiKey) {
+      console.log(
+        "[vapi/update-assistant] vapiPhoneNumberId missing — retrying Vapi import for",
+        sessionRow.twilio_phone_number,
+      );
+      const importRes = await fetch("https://api.vapi.ai/phone-number", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: "telnyx",
+          number: sessionRow.twilio_phone_number,
+          telnyxApiKey,
+          name: `CodeFounder - ${businessName}`,
+        }),
+      });
+      if (importRes.ok) {
+        const imported = (await importRes.json()) as { id?: string };
+        vapiPhoneNumberId = imported.id ?? null;
+        console.log("[vapi/update-assistant] Vapi import retry success — vapiPhoneNumberId:", vapiPhoneNumberId);
+        if (vapiPhoneNumberId) {
+          await adminSupabase
+            .from("agent_wizard_sessions")
+            .update({
+              voice_settings: { ...(sessionVoice ?? {}), vapiPhoneNumberId },
+              updated_at: new Date().toISOString(),
+            })
+            .eq("user_id", user.id)
+            .eq("agent_type", agentType);
+        }
+      } else {
+        console.error("[vapi/update-assistant] Vapi import retry failed:", await importRes.text());
+      }
+    }
+  }
 
   if (vapiPhoneNumberId) {
     const linkRes = await fetch(`https://api.vapi.ai/phone-number/${vapiPhoneNumberId}`, {
@@ -265,11 +352,12 @@ export async function POST(request: Request) {
       body: JSON.stringify({ assistantId }),
     });
     if (!linkRes.ok) {
-      console.warn("[vapi/update-assistant] phone-number link failed:", await linkRes.text());
-      // Non-fatal: assistant is created; the number can be linked later
+      console.error("[vapi/update-assistant] phone-number link failed:", await linkRes.text());
     } else {
       console.log("[vapi/update-assistant] linked phone number", vapiPhoneNumberId, "→ assistant", assistantId);
     }
+  } else {
+    console.warn("[vapi/update-assistant] no vapiPhoneNumberId — assistant created without linked phone");
   }
 
   return NextResponse.json({ success: true, assistantId });

@@ -126,17 +126,33 @@ export async function saveWizardProgress(
 
   const isHR = formData.agentType === "hr";
   const isMarketing = formData.agentType === "marketing";
+  // Only persist twilio_phone_number when a real Telnyx number has been provisioned
+  // (phoneOption === "new"). When the user is in "forward" mode their personal carrier
+  // number must never reach this column — it would be returned by Stage 1 of
+  // provision-number as if it were a provisioned Telnyx number.
+  let telnyxNumber: string | null | undefined;
+  if (isHR || isMarketing) {
+    telnyxNumber = null;
+  } else if (formData.voice.phoneOption === "new" && formData.voice.phoneNumber) {
+    telnyxNumber = formData.voice.phoneNumber;
+  }
+  // undefined → omit the key entirely so the column is not touched on upsert
+
+  const sessionPayload: Record<string, unknown> = {
+    user_id: userId,
+    agent_type: formData.agentType,
+    current_step: currentStep,
+    status,
+    business_details: formData.business,
+    voice_settings: isHR ? formData.hr : isMarketing ? formData.marketing : formData.voice,
+    updated_at: new Date().toISOString(),
+  };
+  if (telnyxNumber !== undefined) {
+    sessionPayload.twilio_phone_number = telnyxNumber;
+  }
+
   const { error } = await supabase.from("agent_wizard_sessions").upsert(
-    {
-      user_id: userId,
-      agent_type: formData.agentType,
-      current_step: currentStep,
-      status,
-      business_details: formData.business,
-      voice_settings: isHR ? formData.hr : isMarketing ? formData.marketing : formData.voice,
-      twilio_phone_number: (isHR || isMarketing) ? null : (formData.voice.phoneNumber || null),
-      updated_at: new Date().toISOString(),
-    },
+    sessionPayload,
     { onConflict: "user_id,agent_type" }
   );
 

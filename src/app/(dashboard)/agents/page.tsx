@@ -1,7 +1,11 @@
 import { DashboardNavbar } from "@/components/dashboard/Navbar";
 import { Button } from "@/components/ui/Button";
+import { NewAgentButton } from "@/components/dashboard/NewAgentButton";
+import { TestCallButton } from "@/components/dashboard/TestCallButton";
+import { DeleteAgentButton } from "@/components/dashboard/DeleteAgentButton";
 import { AGENTS, type AgentType } from "@/lib/agents";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { PLAN_LIMITS } from "@/lib/plan-limits";
 import type { BusinessDetails, VoiceSettings } from "@/lib/types/wizard";
 import { timeAgo } from "@/lib/format";
 
@@ -15,11 +19,11 @@ export default async function AgentsPage() {
 
   const userId = user?.id ?? "";
 
-  const [{ data: sessions }, { count: totalCalls }, { data: lastCall }] =
+  const [{ data: sessions }, { count: totalCalls }, { data: lastCall }, { data: subscription }] =
     await Promise.all([
       supabase
         .from("agent_wizard_sessions")
-        .select("agent_type, status, business_details, voice_settings")
+        .select("id, agent_type, status, business_details, voice_settings, vapi_assistant_id")
         .eq("user_id", userId),
       supabase
         .from("call_logs")
@@ -32,7 +36,19 @@ export default async function AgentsPage() {
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
+      supabase
+        .from("subscriptions")
+        .select("plan, status")
+        .eq("user_id", userId)
+        .maybeSingle(),
     ]);
+
+  const planKey = (!subscription || subscription.status === "canceled")
+    ? "free"
+    : ((subscription.plan as keyof typeof PLAN_LIMITS) ?? "free");
+  const planLimits = PLAN_LIMITS[planKey] ?? PLAN_LIMITS.free;
+  const liveCount = (sessions ?? []).filter((s) => s.status === "live").length;
+  const agentLimitReached = liveCount >= planLimits.agents;
 
   const sessionMap = new Map(
     (sessions ?? []).map((s) => [s.agent_type as AgentType, s]),
@@ -86,9 +102,12 @@ export default async function AgentsPage() {
           <p className="font-heading text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
             All Agents
           </p>
-          <Button href="/wizard?new=true" variant="primary" size="sm">
-            + New agent
-          </Button>
+          <NewAgentButton
+            limitReached={agentLimitReached}
+            planKey={planKey}
+            agentLimit={planLimits.agents}
+            currentCount={liveCount}
+          />
         </div>
         <div className="grid gap-5 md:grid-cols-2 agents-grid">
           {AGENTS.filter((agent) => agent.id === "voice").map((agent) => {
@@ -302,6 +321,12 @@ export default async function AgentsPage() {
                               Marketing Dashboard
                             </Button>
                           )}
+                          {agent.id === "voice" && (session as { vapi_assistant_id?: string } | undefined)?.vapi_assistant_id && (
+                            <TestCallButton
+                              assistantId={(session as { vapi_assistant_id: string }).vapi_assistant_id}
+                            />
+                          )}
+                          <DeleteAgentButton agentType={agent.id} agentName={agent.name} />
                         </>
                       ) : (
                         <Button href={`/wizard?agent=${agent.id}`} variant="primary" size="md">

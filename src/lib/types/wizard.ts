@@ -136,8 +136,10 @@ export interface VoiceSettings {
   calendarConnected: boolean;
   calendarEmail: string;
   phoneOption: "new" | "forward" | "";
-  phoneNumber: string;
+  phoneNumber: string;           // Telnyx-provisioned number only — never a personal number
+  existingPhoneNumber?: string;  // User's own carrier number (forward mode, reference only)
   languages: string[];
+  vapiPhoneNumberId?: string | null;
 }
 
 export interface WizardFormData {

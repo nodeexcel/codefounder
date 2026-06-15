@@ -33,6 +33,9 @@ export default function CallsPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -45,6 +48,30 @@ export default function CallsPage() {
     }, 300);
     return () => clearTimeout(t);
   }, [searchInput]);
+
+  async function handleSync() {
+    setSyncing(true);
+    setSyncMsg(null);
+    try {
+      const res = await fetch("/api/vapi/sync-calls");
+      const data = (await res.json()) as { synced?: number; message?: string; error?: string };
+      if (!res.ok) {
+        setSyncMsg(data.error ?? "Sync failed");
+      } else {
+        setSyncMsg(
+          data.synced === 0
+            ? (data.message ?? "No new calls to sync")
+            : `Synced ${data.synced} call${data.synced !== 1 ? "s" : ""}`,
+        );
+        setPage(0);
+        setReloadKey((k) => k + 1);
+      }
+    } catch {
+      setSyncMsg("Sync failed — check your connection");
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -95,7 +122,7 @@ export default function CallsPage() {
 
     load();
     return () => { cancelled = true; };
-  }, [page, search, dateFilter]);
+  }, [page, search, dateFilter, reloadKey]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
@@ -116,9 +143,40 @@ export default function CallsPage() {
       />
 
       <div className="p-4 sm:p-6 lg:p-8">
-        <p className="mb-6 font-heading text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
-          Call History
-        </p>
+        <div className="mb-6 flex items-center justify-between">
+          <p className="font-heading text-[11px] font-semibold uppercase tracking-[3px]" style={{ color: "var(--accent)" }}>
+            Call History
+          </p>
+          <div className="flex items-center gap-3">
+            {syncMsg && (
+              <span className="text-xs" style={{ color: "var(--muted)" }}>{syncMsg}</span>
+            )}
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all disabled:opacity-50"
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                color: "var(--muted)",
+              }}
+              onMouseEnter={(e) => { if (!syncing) (e.currentTarget as HTMLElement).style.color = "var(--foreground)"; }}
+              onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.color = "var(--muted)"}
+            >
+              {syncing ? (
+                <>
+                  <span
+                    className="h-3 w-3 animate-spin rounded-full border"
+                    style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }}
+                  />
+                  Syncing…
+                </>
+              ) : (
+                "↻ Sync calls"
+              )}
+            </button>
+          </div>
+        </div>
 
         {/* Filters */}
         <div className="mb-6 flex flex-col gap-3 sm:flex-row">
@@ -330,7 +388,7 @@ export default function CallsPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="mt-6 flex items-center justify-between">
+          <div className="mt-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <p className="text-sm" style={{ color: "var(--muted)" }}>
               Showing {page * PAGE_SIZE + 1}–
               {Math.min((page + 1) * PAGE_SIZE, total)} of {total}
@@ -339,7 +397,7 @@ export default function CallsPage() {
               <button
                 onClick={() => setPage((p) => p - 1)}
                 disabled={page === 0}
-                className="rounded-lg px-4 py-2 text-sm transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40"
+                className="min-h-[44px] rounded-lg px-4 py-2 text-sm transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40"
                 style={{
                   background: "var(--card)",
                   border: "1px solid var(--border)",
@@ -353,7 +411,7 @@ export default function CallsPage() {
               <button
                 onClick={() => setPage((p) => p + 1)}
                 disabled={page >= totalPages - 1}
-                className="rounded-lg px-4 py-2 text-sm transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40"
+                className="min-h-[44px] rounded-lg px-4 py-2 text-sm transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40"
                 style={{
                   background: "var(--card)",
                   border: "1px solid var(--border)",

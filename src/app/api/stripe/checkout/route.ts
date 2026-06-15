@@ -68,7 +68,7 @@ export async function POST(request: Request) {
           plan: requestedPlan,
         },
       },
-      success_url: `${origin}/dashboard`,
+      success_url: `${origin}/dashboard?checkout=success`,
       cancel_url: `${origin}/pricing`,
     });
 

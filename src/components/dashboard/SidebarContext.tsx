@@ -5,11 +5,15 @@ import { createContext, useContext, useState } from "react";
 interface SidebarCtx {
   isCollapsed: boolean;
   toggle: () => void;
+  mobileOpen: boolean;
+  setMobileOpen: (v: boolean) => void;
 }
 
 const SidebarContext = createContext<SidebarCtx>({
   isCollapsed: false,
   toggle: () => {},
+  mobileOpen: false,
+  setMobileOpen: () => {},
 });
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
@@ -17,6 +21,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("sidebar-collapsed") === "true";
   });
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   function toggle() {
     setIsCollapsed((prev) => {
@@ -27,7 +32,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <SidebarContext.Provider value={{ isCollapsed, toggle }}>
+    <SidebarContext.Provider value={{ isCollapsed, toggle, mobileOpen, setMobileOpen }}>
       {children}
     </SidebarContext.Provider>
   );

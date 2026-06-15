@@ -21,20 +21,33 @@ function isValidE164(number: string): boolean {
   return /^\+1\d{10}$/.test(number);
 }
 
+// Safely parse a response body as JSON, falling back to raw text.
+// Returns { parsed, raw } so callers can log either form.
+async function readBody(res: Response): Promise<{ parsed: unknown; raw: string }> {
+  const raw = await res.text();
+  try {
+    return { parsed: JSON.parse(raw), raw };
+  } catch {
+    return { parsed: null, raw };
+  }
+}
+
 export async function POST() {
   const tag = "[provision-number]";
   const telnyxApiKey = process.env.TELNYX_API_KEY;
   const vapiApiKey   = process.env.VAPI_API_KEY;
 
   console.log(`${tag} Starting provision request`);
+  console.log(`${tag} ENV TELNYX_API_KEY: ${telnyxApiKey ? "present" : "missing"}`);
+  console.log(`${tag} ENV TELNYX_MESSAGING_NUMBER: ${process.env.TELNYX_MESSAGING_NUMBER ? "present" : "missing"}`);
+  console.log(`${tag} ENV VAPI_API_KEY: ${vapiApiKey ? "present" : "missing"}`);
 
   if (!telnyxApiKey) {
     console.error(`${tag} TELNYX_API_KEY is not set`);
     return NextResponse.json({ error: "TELNYX_API_KEY is not configured" }, { status: 500 });
   }
   if (!vapiApiKey) {
-    console.error(`${tag} VAPI_API_KEY is not set`);
-    return NextResponse.json({ error: "VAPI_API_KEY is not configured" }, { status: 500 });
+    console.warn(`${tag} VAPI_API_KEY is not set — Vapi import will be skipped; update-assistant will retry on Go Live`);
   }
 
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -62,15 +75,22 @@ export async function POST() {
     .maybeSingle();
 
   if (existingRow?.twilio_phone_number) {
-    console.log(`${tag} Stage 1: Found existing number: ${existingRow.twilio_phone_number} — returning early`);
     const vs = (existingRow.voice_settings as Record<string, unknown>) ?? {};
-    return NextResponse.json({
-      phoneNumber:       existingRow.twilio_phone_number as string,
-      vapiPhoneNumberId: (vs.vapiPhoneNumberId as string | undefined) ?? null,
-      reused:            true,
-    });
+    // Only treat twilio_phone_number as a provisioned Telnyx number when
+    // voice_settings.phoneOption is "new". If it's "forward" the column was
+    // written incorrectly by an older version of saveWizardProgress — skip it.
+    if (vs.phoneOption === "new") {
+      console.log(`${tag} Stage 1: Found existing Telnyx number: ${existingRow.twilio_phone_number} — returning early`);
+      return NextResponse.json({
+        phoneNumber:       existingRow.twilio_phone_number as string,
+        vapiPhoneNumberId: (vs.vapiPhoneNumberId as string | undefined) ?? null,
+        reused:            true,
+      });
+    }
+    console.log(`${tag} Stage 1: twilio_phone_number present but phoneOption="${String(vs.phoneOption)}" — not a provisioned number, continuing`);
+  } else {
+    console.log(`${tag} Stage 1: No existing number in DB`);
   }
-  console.log(`${tag} Stage 1: No existing number in DB`);
 
   const telnyxHeaders = {
     Authorization:  `Bearer ${telnyxApiKey}`,
@@ -78,20 +98,19 @@ export async function POST() {
   };
 
   // ── STAGE 2: Reuse an unassigned active number from Telnyx account ────────
+  const listUrl = "https://api.telnyx.com/v2/phone_numbers?filter[status]=active";
   console.log(`${tag} Stage 2: Fetching active numbers from Telnyx account`);
+  console.log(`[TELNYX_LIST] GET ${listUrl}`);
   let phoneNumber: string | null = null;
 
-  const listRes = await fetch(
-    "https://api.telnyx.com/v2/phone_numbers?filter[status]=active",
-    { headers: telnyxHeaders }
-  );
+  const listRes = await fetch(listUrl, { headers: telnyxHeaders });
 
   if (listRes.ok) {
     const listData = (await listRes.json()) as {
       data?: Array<{ phone_number: string; status: string }>;
     };
     const accountNumbers = listData.data ?? [];
-    console.log(`${tag} Stage 2: ${accountNumbers.length} active number(s) on Telnyx account`);
+    console.log(`[TELNYX_LIST] status=${listRes.status} numbers_returned=${accountNumbers.length}`);
 
     if (accountNumbers.length > 0) {
       // Check which numbers are already assigned to other users in our DB
@@ -117,38 +136,49 @@ export async function POST() {
       }
     }
   } else {
-    const errText = await listRes.text();
-    console.warn(`${tag} Stage 2: Failed to list Telnyx numbers (non-fatal): ${errText}`);
+    const { parsed, raw } = await readBody(listRes);
+    console.error(`[TELNYX_ERROR] stage=LIST status=${listRes.status}`);
+    console.error(`[TELNYX_ERROR] response_body=${raw}`);
+    console.error(`[TELNYX_ERROR] parsed=${JSON.stringify(parsed)}`);
+    console.warn(`${tag} Stage 2: Failed to list Telnyx numbers (non-fatal) — continuing to Stage 3`);
   }
 
   // ── STAGE 3: Purchase a new number ────────────────────────────────────────
   if (!phoneNumber) {
+    const searchUrl = "https://api.telnyx.com/v2/available_phone_numbers?filter[country_code]=US&filter[features][]=voice&filter[limit]=1";
     console.log(`${tag} Stage 3: Searching for available US voice numbers`);
+    console.log(`[TELNYX_SEARCH] GET ${searchUrl}`);
 
-    const searchRes = await fetch(
-      "https://api.telnyx.com/v2/available_phone_numbers?filter[country_code]=US&filter[features][]=voice&filter[limit]=1",
-      { headers: telnyxHeaders }
-    );
+    const searchRes = await fetch(searchUrl, { headers: telnyxHeaders });
+    const { parsed: searchParsed, raw: searchRaw } = await readBody(searchRes);
+
+    console.log(`[TELNYX_SEARCH] status=${searchRes.status}`);
+    console.log(`[TELNYX_SEARCH] response_body=${searchRaw}`);
 
     if (!searchRes.ok) {
-      const errText = await searchRes.text();
-      console.error(`${tag} Stage 3: Telnyx number search failed: ${errText}`);
+      console.error(`[TELNYX_ERROR] stage=SEARCH status=${searchRes.status}`);
+      console.error(`[TELNYX_ERROR] parsed=${JSON.stringify(searchParsed)}`);
       return NextResponse.json(
-        { error: "Failed to search available phone numbers. Please try again." },
+        {
+          error: "Failed to search available phone numbers. Please try again.",
+          _debug: { stage: "TELNYX_SEARCH", status: searchRes.status, body: searchRaw },
+        },
         { status: 502 }
       );
     }
 
-    const searchData = (await searchRes.json()) as {
-      data?: Array<{ phone_number: string }>;
-    };
-    const available = searchData.data ?? [];
-    console.log(`${tag} Stage 3: ${available.length} number(s) available to purchase`);
+    const searchData = searchParsed as { data?: Array<{ phone_number: string }> } | null;
+    const available = searchData?.data ?? [];
+    console.log(`[TELNYX_SEARCH] numbers_available=${available.length}`);
 
     if (available.length === 0) {
-      console.error(`${tag} Stage 3: No US numbers available from Telnyx`);
+      console.error(`[TELNYX_ERROR] stage=SEARCH status=${searchRes.status} result=no_numbers_available`);
+      console.error(`[TELNYX_ERROR] full_response=${searchRaw}`);
       return NextResponse.json(
-        { error: "No US phone numbers available right now. Please try again in a few seconds." },
+        {
+          error: "No US phone numbers available right now. Please try again in a few seconds.",
+          _debug: { stage: "TELNYX_SEARCH", status: searchRes.status, body: searchRaw },
+        },
         { status: 503 }
       );
     }
@@ -156,24 +186,42 @@ export async function POST() {
     const chosen = available[0].phone_number;
     console.log(`${tag} Stage 3: Purchasing number: ${chosen}`);
 
-    const purchaseRes = await fetch("https://api.telnyx.com/v2/phone_numbers", {
+    // Telnyx number purchase uses the /v2/number_orders endpoint (NOT /v2/phone_numbers).
+    // Body must be { phone_numbers: [{ phone_number: "..." }] } — an array of objects.
+    const purchaseUrl = "https://api.telnyx.com/v2/number_orders";
+    const purchaseBody = JSON.stringify({ phone_numbers: [{ phone_number: chosen }] });
+    console.log(`[TELNYX_PURCHASE] POST ${purchaseUrl} body=${purchaseBody}`);
+
+    const purchaseRes = await fetch(purchaseUrl, {
       method:  "POST",
       headers: telnyxHeaders,
-      body:    JSON.stringify({ phone_number: chosen }),
+      body:    purchaseBody,
     });
 
+    const { parsed: purchaseParsed, raw: purchaseRaw } = await readBody(purchaseRes);
+
+    console.log(`[TELNYX_PURCHASE] status=${purchaseRes.status}`);
+    console.log(`[TELNYX_PURCHASE] response_body=${purchaseRaw}`);
+
     if (!purchaseRes.ok) {
-      const errText = await purchaseRes.text();
-      console.error(`${tag} Stage 3: Telnyx purchase failed: ${errText}`);
+      console.error(`[TELNYX_ERROR] stage=PURCHASE status=${purchaseRes.status}`);
+      console.error(`[TELNYX_ERROR] attempted_number=${chosen}`);
+      console.error(`[TELNYX_ERROR] parsed=${JSON.stringify(purchaseParsed)}`);
+      console.error(`[TELNYX_ERROR] full_response=${purchaseRaw}`);
       return NextResponse.json(
-        { error: "Failed to purchase phone number. Check your Telnyx account balance and try again." },
+        {
+          error: "Failed to purchase phone number. Check your Telnyx account balance and try again.",
+          _debug: { stage: "TELNYX_PURCHASE", status: purchaseRes.status, attempted: chosen, body: purchaseRaw },
+        },
         { status: 502 }
       );
     }
 
-    const purchased = (await purchaseRes.json()) as { data?: { phone_number: string } };
-    const raw = purchased.data?.phone_number ?? chosen;
+    // Order response shape: { data: { phone_numbers: [{ phone_number: "..." }] } }
+    const purchased = purchaseParsed as { data?: { phone_numbers?: Array<{ phone_number: string }> } } | null;
+    const raw = purchased?.data?.phone_numbers?.[0]?.phone_number ?? chosen;
     phoneNumber = toE164(raw);
+    console.log(`[TELNYX_PURCHASE] success number=${phoneNumber}`);
     console.log(`${tag} Stage 3: Purchased and normalised to E.164: ${phoneNumber}`);
   }
 
@@ -194,31 +242,39 @@ export async function POST() {
     (vs0.business as Record<string, unknown> | undefined)?.businessName as string | undefined ??
     "Business";
 
-  // ── Import into Vapi ──────────────────────────────────────────────────────
-  console.log(`${tag} Vapi: Importing number ${phoneNumber} (provider: telnyx)`);
+  // ── Import into Vapi (optional) ───────────────────────────────────────────
+  // VAPI_API_KEY is not required for number provisioning. If absent, this step
+  // is skipped and vapiPhoneNumberId stays null. The update-assistant route
+  // has a full retry path for this case — it re-attempts the import on Go Live.
   let vapiPhoneNumberId: string | null = null;
 
-  const vapiRes = await fetch("https://api.vapi.ai/phone-number", {
-    method:  "POST",
-    headers: {
-      Authorization:  `Bearer ${vapiApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      provider:     "telnyx",
-      number:       phoneNumber,
-      telnyxApiKey: telnyxApiKey,
-      name:         `CodeFounder - ${businessName}`,
-    }),
-  });
+  if (vapiApiKey) {
+    console.log(`${tag} Vapi: Importing number ${phoneNumber} (provider: telnyx)`);
+    const vapiRes = await fetch("https://api.vapi.ai/phone-number", {
+      method:  "POST",
+      headers: {
+        Authorization:  `Bearer ${vapiApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        provider:     "telnyx",
+        number:       phoneNumber,
+        telnyxApiKey: telnyxApiKey,
+        name:         `CodeFounder - ${businessName}`,
+      }),
+    });
 
-  if (vapiRes.ok) {
-    const vapiPhone = (await vapiRes.json()) as { id?: string };
-    vapiPhoneNumberId = vapiPhone.id ?? null;
-    console.log(`${tag} Vapi: Import success — vapiPhoneNumberId: ${vapiPhoneNumberId}`);
+    if (vapiRes.ok) {
+      const vapiPhone = (await vapiRes.json()) as { id?: string };
+      vapiPhoneNumberId = vapiPhone.id ?? null;
+      console.log(`${tag} Vapi: Import success — vapiPhoneNumberId: ${vapiPhoneNumberId}`);
+    } else {
+      const errText = await vapiRes.text();
+      // Non-fatal: number is persisted and update-assistant retries the import on Go Live.
+      console.error(`${tag} Vapi: Import failed (will retry on Go Live): ${errText}`);
+    }
   } else {
-    const errText = await vapiRes.text();
-    console.warn(`${tag} Vapi: Import failed (non-fatal, will retry on Go Live): ${errText}`);
+    console.warn(`${tag} Vapi: Skipping import — VAPI_API_KEY not set; update-assistant will retry on Go Live`);
   }
 
   // ── Persist to DB ─────────────────────────────────────────────────────────
